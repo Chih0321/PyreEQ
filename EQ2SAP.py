@@ -76,7 +76,46 @@ class Sap2000(object):
         currentCoordSysName = self.SapModel.GetPresentCoordSystem()
 
         return currentCoordSysName
+    
+    def getModelIsLocked(self):
+        """
+        The function returns True if the model is locked and False if it is unlocked.
+        """
+        IsLocked = self.SapModel.GetModelIsLocked()
 
+        return IsLocked
+    
+    def setModelIsLocked(self, locker):
+        """
+        The item is True if the model is to be locked and False if it is to be unlocked.
+        參數：
+            locker (bool): 模型鎖定狀態。
+        """
+        IsLocked = self.SapModel.SetModelIsLocked(locker)
+
+        return IsLocked
+
+    def clearSelection(self):
+        """
+        This function deselects all objects in the model. 
+        It returns zero if the selection status is successfully set, otherwise it returns nonzero.
+        """
+        self.SapModel.SelectObj.ClearSelection()
+
+    def selectGroup(self, groupname):
+        """
+        This function selects or deselects all objects in the specified group.
+        """
+        self.SapModel.SelectObj.Group(groupname)
+
+    def getSelected(self):
+        """
+        This function retrieves a list of selected objects.
+        """
+        ret = self.SapModel.SelectObj.GetSelected()
+
+        return ret
+    
     def groupdef_getnamelist(self):
         """
         取得目前 Sap2000 模型的群組名稱列表。
@@ -101,6 +140,25 @@ class Sap2000(object):
         ret = self.SapModel.LoadCases.GetNameList()
         return ret
 
+    def define_LoadPatterns_Add(self,name,myType,SelfWTMultiplier=0,AddLoadCase=True):
+        """
+        新增一個載重模式（Load Pattern）。
+
+        參數：
+            name (str): 載重模式名稱。
+            myType (int): 載重模式型態，對應 eLoadPatternType 列舉值。
+                1=DEAD, 2=SUPERDEAD, 3=LIVE, 4=REDUCELIVE, 5=QUAKE, 6=WIND, 7=SNOW, 8=OTHER, 9=MOVE, 10=TEMPERATURE,
+                11=ROOFLIVE, 12=NOTIONAL, 13=PATTERNLIVE, 14=WAVE, 15=BRAKING, 16=CENTRIFUGAL, 17=FRICTION, 18=ICE,
+                19=WINDONLIVELOAD, 20=HORIZONTALEARTHPRESSURE, 21=VERTICALEARTHPRESSURE, 22=EARTHSURCHARGE, 23=DOWNDRAG,
+                24=VEHICLECOLLISION, 25=VESSELCOLLISION, 26=TEMPERATUREGRADIENT, 27=SETTLEMENT, 28=SHRINKAGE, 29=CREEP,
+                30=WATERLOADPRESSURE, 31=LIVELOADSURCHARGE, 32=LOCKEDINFORCES, 33=PEDESTRIANLL, 34=PRESTRESS,
+                35=HYPERSTATIC, 36=BOUYANCY, 37=STREAMFLOW, 38=IMPACT, 39=CONSTRUCTION。
+            SelfWTMultiplier (float): 自重乘數。
+            AddLoadCase (bool): 是否自動新增對應的線性靜力載重案例。
+        """
+        self.SapModel.LoadPatterns.Add(name,myType,SelfWTMultiplier,AddLoadCase)
+
+
     def define_LoadCases_StaticLinear_SetCase(self, name):
         """
         初始化一個靜力線性載重案例。
@@ -110,9 +168,7 @@ class Sap2000(object):
         """
         self.SapModel.LoadCases.StaticLinear.SetCase(name)
 
-    def define_LoadCases_StaticLinear_SetLoads(
-        self, name, numberLoads, loadType, loadName, scaleFactor
-    ):
+    def define_LoadCases_StaticLinear_SetLoads(self, name, numberLoads, loadType, loadName, scaleFactor):
         """
         設定指定分析案例的載重資料。
 
@@ -123,9 +179,21 @@ class Sap2000(object):
             loadName (list of str): 載重名稱。若 loadType 為 'Load'，此為已定義載重名稱；若為 'Accel'，此為 UX、UY、UZ、RX、RY 或 RZ。
             scaleFactor (list of float): 各載重的比例因子。對於 Accel UX/UY/UZ 單位為 L/s²，其餘無單位。
         """
-        self.SapModel.LoadCases.StaticLinear.SetLoads(
-            name, numberLoads, loadType, loadName, scaleFactor
-        )
+        self.SapModel.LoadCases.StaticLinear.SetLoads(name, numberLoads, loadType, loadName, scaleFactor)
+
+    def deltet_Pointobj_Deleteloadforce(self, name, loadpat, ItemTypeElm):
+        """
+        This function deletes all point load assignments, for the specified load pattern, from the specified point object(s).
+
+        參數：
+            Name (str): The name of a point object or a group depending on the value selected for ItemType item.
+            LoadPat (str): The name of a defined load pattern.
+            ItemType(int): This is one of the following items from the eItemType enumeration.
+                            Object = 0
+                            Group = 1
+                            SelectedObjects = 2
+        """
+        self.SapModel.PointObj.DeleteLoadForce(name, loadpat, ItemTypeElm)
 
     def analyze_SetRunCaseFlag(self, Name, Run, All=False):
         """
@@ -515,12 +583,13 @@ def setup_and_run_sap_analysis(model_path):
     sapmodel.setUnits(12)
 
     # --- 2. 分析用力量加載及計算 ---
+    status_lock = sapmodel.getModelIsLocked()
+    if status_lock:
+        sapmodel.setModelIsLocked(False)
     lc_unit = {"UNIT-X": "UX", "UNIT-Y": "UY", "UNIT-Z": "UZ"}
     for lc, dir_name in lc_unit.items():
         sapmodel.define_LoadCases_StaticLinear_SetCase(lc)
-        sapmodel.define_LoadCases_StaticLinear_SetLoads(
-            lc, 1, ["Accel"], [dir_name], [9.81]
-        )
+        sapmodel.define_LoadCases_StaticLinear_SetLoads(lc, 1, ["Accel"], [dir_name], [9.81])
     print("[訊息]：單位均佈力載重設定完成！")
 
     _, num_lc, namelist_lc = sapmodel.loadcases_getnamelist()
@@ -646,13 +715,48 @@ if __name__ == "__main__":
 
         # --- 5. Assign地震力 ---
         presentcoordsystem = sapmodel.getCoordSystem()
+        status_lock = sapmodel.getModelIsLocked()
+        if status_lock:
+            sapmodel.setModelIsLocked(False)
+        # EQ Load Cases設定
+        lc_list = sapmodel.loadcases_getnamelist()
+        for case in ['EQL', 'EQT', 'EQV']:
+            if case not in lc_list[2]:
+                sapmodel.define_LoadPatterns_Add(case,5)
+                sapmodel.define_LoadCases_StaticLinear_SetCase(case)
+                sapmodel.define_LoadCases_StaticLinear_SetLoads(case, 1, ["Load"], [case], [1])
 
+        # 地震力加載
+        def eqforce_apply(lclabel, group, EQF, presentcoordsystem):
+            sapmodel.deltet_Pointobj_Deleteloadforce('ALL', lclabel, 1)
+            sapmodel.clearSelection()
+            for sg in group:
+                sapmodel.selectGroup(sg)
+            res = sapmodel.getSelected()
+            objdict = dict(zip(res[3], res[2])) # res[3]為object name, res[2]為object type
+            for objname, objtype in objdict.items():
+                if objtype == 1:
+                    value = EQF[objname]
+                    if lclabel == 'EQL':
+                        forcedof = [value,0,0,0,0,0]
+                    elif lclabel == 'EQT':
+                        forcedof = [0,value,0,0,0,0]
+                    elif lclabel == 'EQV':
+                        forcedof = [0,0,value,0,0,0]
+                    else:
+                        print('[錯誤]: 地震LoadCase命名有誤')
+                        os._exit(-1)
+                    sapmodel.assign_PointObj_SetLoadForce(objname,lclabel,forcedof,Replace=True,CSys=presentcoordsystem,ItemType=0)
+
+        eqforce_apply('EQL', groups_x, EQF_x, presentcoordsystem)
+        eqforce_apply('EQT', groups_y, EQF_y, presentcoordsystem)
+        eqforce_apply('EQV', groups_z, EQF_z, presentcoordsystem)
+        print("[訊息]：地震力施加完成！")
 
         # 關閉 SAP2000
         sapmodel.file_Save(model_path)
         sapmodel.closeModel()
-        print('E')
-
+        print("[訊息]：SAP2000關閉。")
 
 
     run_analysis_eqforce(
