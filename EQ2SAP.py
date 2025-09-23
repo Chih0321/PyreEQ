@@ -69,6 +69,14 @@ class Sap2000(object):
         """
         self.SapModel.SetPresentUnits(unitsTag)
 
+    def getCoordSystem(self):
+        """
+        ---get the name of the present coordinate system---
+        """
+        currentCoordSysName = self.SapModel.GetPresentCoordSystem()
+
+        return currentCoordSysName
+
     def groupdef_getnamelist(self):
         """
         取得目前 Sap2000 模型的群組名稱列表。
@@ -227,6 +235,29 @@ class Sap2000(object):
         """
         self.SapModel.Results.Setup.SetCaseSelectedForOutput(Name,Selected)
 
+    def assign_PointObj_SetLoadForce(self,name,loadPat,value,Replace=False,CSys="Global",ItemType=0):
+        """
+        指定點物件的節點力。
+
+        參數：
+            name (str): 點物件名稱或群組名稱，依 ItemType 決定。
+            loadPat (str): 載重模式名稱。
+            value (list of float): 六個分量的點載重值。
+                value[0]: F1 [力]
+                value[1]: F2 [力]
+                value[2]: F3 [力]
+                value[3]: M1 [力×長度]
+                value[4]: M2 [力×長度]
+                value[5]: M3 [力×長度]
+            Replace (bool): 若為 True，則先刪除舊有載重再指定新載重。
+            CSys (str): 載重所用座標系統名稱，預設為 Global。
+            ItemType (int): 指定對象型態：0=Object，1=Group，2=SelectedObjects。
+                0: 指定 name 為單一點物件。
+                1: 指定 name 為群組。
+                2: 指定所有已選取點物件，忽略 name。
+        """
+        self.SapModel.PointObj.SetLoadForce(name,loadPat,value,Replace,CSys,ItemType)
+
 
 def get_disp(sapobj, lc_dir, gp_list, disp_note):
     jointdisp = {}
@@ -289,6 +320,115 @@ def cal_period(jointdisp, jointmass, group):
 
     return dict_period
 
+def cal_eqforce(jointdisp, jointmass, group, eqfactor):
+    dict_eqforce = {}
+    for gp in group:
+        dict_disp = jointdisp[gp]
+        dict_mass = jointmass[gp]
+
+        # 依據節點名稱('node_name')將位移與質量進行配對。
+        # 這樣可以確保即使節點順序不同也能正確匹配。
+        disp_by_node = dict(zip(dict_disp['node_name'], dict_disp['node_disp']))
+        mass_by_node = dict(zip(dict_mass['node_name'], dict_mass['node_mass']))
+
+        # 針對共通節點計算 位移 * 質量
+        wu = {node: disp_by_node[node] * mass_by_node[node] for node in disp_by_node.keys() & mass_by_node.keys()}
+        # 針對共通節點計算 位移 * 位移 * 質量
+        wuu = {node: disp_by_node[node] * disp_by_node[node] * mass_by_node[node] for node in disp_by_node.keys() & mass_by_node.keys()}
+
+        beta = abs(sum(wu.values()))
+        zeta = sum(wuu.values())
+
+        # 計算節點地震力
+        # [sum(wu)/sum(wuu)]*wu*(V/W) = (beta/zeta)*wu*eqfactor
+        eqf = {node: (beta/zeta) * eqfactor[group.index(gp)]*9.81 * mass_by_node[node] * disp_by_node[node] for node in disp_by_node.keys() & mass_by_node.keys()}
+        
+        dict_eqforce[gp] = {}
+        dict_eqforce[gp]['beta'] = beta
+        dict_eqforce[gp]['zeta'] = zeta
+        dict_eqforce[gp]['eqfactor'] = eqfactor[group.index(gp)]
+        dict_eqforce[gp]['mass'] = mass_by_node
+        dict_eqforce[gp]['disp'] = disp_by_node
+        dict_eqforce[gp]['wuu'] = wuu
+        dict_eqforce[gp]['wu'] = wu
+        dict_eqforce[gp]['eqforce'] = eqf
+
+    return dict_eqforce
+
+def cal_eqvforce(jointdisp, jointmass, group, eqfactor):
+    dict_eqforce = {}
+    # 默認第一組為上構，第二組為下構
+    for gp in group:
+        dict_mass = jointmass[gp]
+        mass_by_node = dict(zip(dict_mass['node_name'], dict_mass['node_mass']))
+        # 計算節點地震力
+        eqf = {node: eqfactor[group.index(gp)]*9.81 * mass_by_node[node] for node in mass_by_node.keys()}
+        
+        dict_eqforce[gp] = {}
+        dict_eqforce[gp]['eqfactor'] = eqfactor[group.index(gp)]
+        dict_eqforce[gp]['mass'] = mass_by_node
+        dict_eqforce[gp]['eqforce'] = eqf
+
+    return dict_eqforce
+
+def merge_group_data(data_dict, new_group_name):
+    """
+    將來自多個群組的資料字典合併為單一群組。
+    處理重複節點時，會保留第一個遇到的節點資料。
+
+    Args:
+        data_dict (dict): 來自 get_disp 或 get_mass 的字典，例如 {'Pier1': {...}, 'Pier2': {...}}。
+        new_group_name (str): 新合併群組的名稱。
+        
+    Returns:
+        dict: 包含單一合併群組條目的字典，例如 {'Piers_Combined': {...}}。
+    """
+    if not data_dict:
+        return {new_group_name: {'node_num': 0, 'node_name': [], 'node_data': []}}
+
+    # 確定資料是位移('node_disp')還是質量('node_mass')
+    first_group_data = next(iter(data_dict.values()))
+    data_key = 'node_disp' if 'node_disp' in first_group_data else 'node_mass'
+
+    all_node_names = []
+    all_node_data = []
+
+    for group_data in data_dict.values():
+        all_node_names.extend(group_data.get('node_name', []))
+        all_node_data.extend(group_data.get(data_key, []))
+
+    # 透過字典來處理重複節點，保留第一個出現的值
+    unique_nodes = {}
+    for name, data_val in zip(all_node_names, all_node_data):
+        if name not in unique_nodes:
+            unique_nodes[name] = data_val
+            
+    merged_data = {
+        'node_num': len(unique_nodes),
+        'node_name': list(unique_nodes.keys()),
+        data_key: list(unique_nodes.values())
+    }
+    
+    return {new_group_name: merged_data}
+
+def merge_force_data(force_data_dict):
+    """
+    將來自多個群組的 'eqforce' 字典合併為單一字典。
+
+    Args:
+        force_data_dict (dict): 一個字典，其鍵為群組名稱，值為包含 'eqforce' 字典的字典。
+                                e.g., {'Group1': {'eqforce': {'Node1': 10}}, 'Group2': {'eqforce': {'Node2': 20}}}
+
+    Returns:
+        dict: 一個包含所有合併後節點力的單一字典。
+              e.g., {'Node1': 10, 'Node2': 20}
+    """
+    merged_forces = {}
+    for group_data in force_data_dict.values():
+        if 'eqforce' in group_data:
+            merged_forces.update(group_data['eqforce'])
+    return merged_forces
+
 def export_results_to_excel(period_x, period_y, period_z, output_path):
     """
     將計算結果彙整並輸出至包含多個工作表的 Excel 檔案。
@@ -348,20 +488,18 @@ def export_results_to_excel(period_x, period_y, period_z, output_path):
 
     print(f"[訊息]：計算結果已成功匯出至：{output_path}")
 
-def run_analysis_and_export_results(model_path, groups_x, groups_y, groups_z):
+def setup_and_run_sap_analysis(model_path):
     """
-    執行完整的 SAP2000 週期分析與結果匯出流程。
+    開啟 SAP2000 模型，設定並執行分析。
 
     1. 開啟並準備 SAP2000 模型。
     2. 設定並執行單位力載重分析。
-    3. 提取位移與質量，計算各群組與方向的週期。
-    4. 將結果印至主控台並匯出至 Excel 檔案。
 
     參數:
         model_path (str): SAP2000 模型檔案的完整路徑。
-        groups_x (list): 要在 X 方向分析的群組名稱列表。
-        groups_y (list): 要在 Y 方向分析的群組名稱列表。
-        groups_z (list): 要在 Z 方向分析的群組名稱列表。
+
+    回傳:
+        Sap2000: 已執行分析的 Sap2000 物件。
     """
     # --- 1. 模型物件創建及控制 ---
     sapmodel = Sap2000()
@@ -400,19 +538,44 @@ def run_analysis_and_export_results(model_path, groups_x, groups_y, groups_z):
         print("[警告]：模型分析未成功執行。")
     else:
         print("[訊息]：模型分析完成！")
+    
+    return sapmodel
 
-    # --- 3. 獲取分析結果並計算週期 ---
+def run_analysis_period(model_path, groups_x, groups_y, groups_z):
+    """
+    執行完整的 SAP2000 週期分析與結果匯出流程。
+
+    1. 開啟模型並執行分析。
+    2. 提取位移與質量，計算各群組與方向的週期。
+    3. 將結果印至主控台並匯出至 Excel 檔案。
+
+    參數:
+        model_path (str): SAP2000 模型檔案的完整路徑。
+        groups_x (list): 要在 X 方向分析的群組名稱列表。
+        groups_y (list): 要在 Y 方向分析的群組名稱列表。
+        groups_z (list): 要在 Z 方向分析的群組名稱列表。
+    """
+    # --- 1. 開啟模型並執行分析 ---
+    sapmodel = setup_and_run_sap_analysis(model_path)
+
+    # --- 2. 獲取分析結果並計算週期 ---
+    # 獲取 X 和 Y 方向的位移與質量
     jointdisp_x = get_disp(sapmodel, 'UNIT-X', groups_x, 7)
     jointdisp_y = get_disp(sapmodel, 'UNIT-Y', groups_y, 8)
-    jointdisp_z = get_disp(sapmodel, 'UNIT-Z', groups_z, 9)
-
     jointmass_x = get_mass(sapmodel, groups_x, 3)
     jointmass_y = get_mass(sapmodel, groups_y, 4)
-    jointmass_z = get_mass(sapmodel, groups_z, 5)
+
+    # 對於 Z 方向，獲取結果後合併為一個群組
+    raw_jointdisp_z = get_disp(sapmodel, 'UNIT-Z', groups_z, 9)
+    raw_jointmass_z = get_mass(sapmodel, groups_z, 5)
+    merged_z_group_name = 'StructZdir'
+    jointdisp_z = merge_group_data(raw_jointdisp_z, merged_z_group_name)
+    jointmass_z = merge_group_data(raw_jointmass_z, merged_z_group_name)
 
     period_x = cal_period(jointdisp_x, jointmass_x, groups_x)
     period_y = cal_period(jointdisp_y, jointmass_y, groups_y)
-    period_z = cal_period(jointdisp_z, jointmass_z, groups_z)
+    # Z 方向週期計算使用合併後的單一群組
+    period_z = cal_period(jointdisp_z, jointmass_z, [merged_z_group_name])
     
     print("[訊息]：週期計算完成！")
 
@@ -420,7 +583,7 @@ def run_analysis_and_export_results(model_path, groups_x, groups_y, groups_z):
     sapmodel.file_Save(model_path)
     sapmodel.closeModel()
 
-    # --- 4. 輸出週期結果 ---
+    # --- 3. 輸出週期結果 ---
     print("\n--- Calculated Periods ---")
     for group_name, data in period_x.items():
         print(f"Direction: X, Group: {group_name:<10} Period: {data['period']:.4f} s")
@@ -437,12 +600,67 @@ if __name__ == "__main__":
     # TODO: 此處先指定GROUP，後續須配合UI傳入變數變換
     groups_to_run_x = ['ALL', 'Pier1']
     groups_to_run_y = ['ALL']
-    groups_to_run_z = ['ALL']
+    groups_to_run_z = ['Pier1', 'Pier2']
 
     # 執行主流程
-    run_analysis_and_export_results(
+    # run_analysis_period(
+    #     MODEL_PATH, 
+    #     groups_to_run_x, 
+    #     groups_to_run_y, 
+    #     groups_to_run_z
+    # )
+
+    eqfactor_to_run_x = [0.15, 0.15]
+    eqfactor_to_run_y = [0.15]
+    eqfactor_to_run_z = [0.15, 0.05]
+
+    def run_analysis_eqforce(model_path, groups_x, groups_y, groups_z, eqfactor_x, eqfactor_y, eqfactor_z):
+        # --- 1. 開啟模型並執行分析 ---
+        sapmodel = setup_and_run_sap_analysis(model_path)
+
+        # --- 2. 獲取分析結果 ---
+        # 獲取 X 和 Y 方向的位移與質量
+        jointdisp_x = get_disp(sapmodel, 'UNIT-X', groups_x, 7)
+        jointdisp_y = get_disp(sapmodel, 'UNIT-Y', groups_y, 8)
+        jointdisp_z = get_disp(sapmodel, 'UNIT-Z', groups_z, 9)
+        jointmass_x = get_mass(sapmodel, groups_x, 3)
+        jointmass_y = get_mass(sapmodel, groups_y, 4)
+        jointmass_z = get_mass(sapmodel, groups_z, 5)
+
+        # --- 3. 計算分析橫力 ---
+        # 計算X, Y方向地震節點力
+        eqforce_x = cal_eqforce(jointdisp_x, jointmass_x, groups_x, eqfactor_x)
+        eqforce_y = cal_eqforce(jointdisp_y, jointmass_y, groups_y, eqfactor_y)
+
+        # 將各群組的地震力合併為單一字典
+        EQF_x = merge_force_data(eqforce_x)
+        EQF_y = merge_force_data(eqforce_y)
+        
+        # --- 4. 計算分析垂直力 ---
+        # 計算Z方向地震節點力
+        eqforce_z = cal_eqvforce(jointdisp_z, jointmass_z, groups_z, eqfactor_z)
+        
+        # 將各群組的地震力合併為單一字典
+        EQF_z = merge_force_data(eqforce_z)
+        print("[訊息]：分布力計算完成！")
+
+        # --- 5. Assign地震力 ---
+        presentcoordsystem = sapmodel.getCoordSystem()
+
+
+        # 關閉 SAP2000
+        sapmodel.file_Save(model_path)
+        sapmodel.closeModel()
+        print('E')
+
+
+
+    run_analysis_eqforce(
         MODEL_PATH, 
         groups_to_run_x, 
         groups_to_run_y, 
-        groups_to_run_z
+        groups_to_run_z,
+        eqfactor_to_run_x, 
+        eqfactor_to_run_y, 
+        eqfactor_to_run_z
     )

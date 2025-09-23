@@ -1,4 +1,4 @@
-File D:\Users\63427\Desktop\Code\EQ2SAP\example\model_preEQ.$2k was saved on 9/23/25 at 10:45:53
+File D:\Users\63427\Desktop\Code\EQ2SAP\example\model_preEQ.$2k was saved on 9/23/25 at 13:23:35
  
 TABLE:  "ACTIVE DEGREES OF FREEDOM"
    UX=Yes   UY=Yes   UZ=Yes   RX=Yes   RY=Yes   RZ=Yes
@@ -7491,8 +7491,11 @@ TABLE:  "PROJECT INFORMATION"
    Item="Design Code"
    Item="Unit X Groups"   Data=ALL;Pier1
    Item="Unit Y Group"   Data=ALL
-   Item="Unit Z Group superstructure"   Data=ALL
-   Item="Unit Z Group substructure"   Data=ALL
+   Item="Unit Z Group superstructure"   Data=Pier1
+   Item="Unit Z Group substructure"   Data=Pier2
+   Item=Tx   Data=1.1487
+   Item=Ty   Data=2.1184
+   Item=Tz   Data=0.0926
  
 TABLE:  "REBAR SIZES"
    RebarID=#2   Area=0.000032258   Diameter=0.00635
