@@ -3,6 +3,8 @@ import win32com.client as win32
 import os
 import pandas as pd
 import math
+import pythoncom
+import sys
 
 # 專案設定
 # 這裡請替換為你要開啟的模型檔案路徑
@@ -10,20 +12,37 @@ MODEL_PATH = r"D:\Users\63427\Desktop\Code\EQ2SAP\example\model_test.sdb"
 
 
 class Sap2000(object):
+    """
+    一個用於與 SAP2000 應用程式進行 COM 互動的包裝類別。
+    提供了開啟、儲存、分析模型以及獲取結果等多種方法。
+    """
     def __init__(self):
         self.SapObject = None
         self.SapModel = None
 
     def initializeNewModel(self, unitsTag=12):
         """
-        初始化一個新的 Sap2000 模型。
+        確保 SAP2000 實例已啟動並初始化一個新模型。
+        此方法會先嘗試附加到一個正在運行的 SAP2000 實例，如果失敗，則會啟動一個新的實例。
         """
-        self.SapObject = win32.Dispatch("SAP2000.SapObject")  # create SAP2000 object
-        self.SapObject.ApplicationStart()  # start a SAP2000 program
-        self.SapModel = self.SapObject.SapModel  # create SAP2000 model object
-        self.SapModel.InitializeNewModel(
-            unitsTag
-        )  # Clears the previous model and initializes a new model
+        try:
+            # 嘗試獲取一個正在運行的 SAP2000 實例
+            self.SapObject = win32.GetActiveObject("SAP2000.SapObject")
+            print("[訊息]：已成功附加到現有的 SAP2000 實例。")
+        except pythoncom.com_error:
+            # 如果沒有正在運行的實例，則創建一個新的
+            print("[訊息]：未找到正在運行的 SAP2000 實例，正在啟動新實例...")
+            try:
+                self.SapObject = win32.Dispatch("SAP2000.SapObject")
+                self.SapObject.ApplicationStart()
+            except pythoncom.com_error:
+                print("[錯誤]：無法啟動 SAP2000。請檢查 SAP2000 是否已正確安裝，並手動關閉所有背景中的 'SAP2000.exe' 程序後再試。")
+                exit(1)
+
+        self.SapModel = self.SapObject.SapModel
+        # 清除當前模型並初始化一個新模型
+        self.SapModel.InitializeNewModel(unitsTag)
+        print("[訊息]：SAP2000 模型已初始化。")
 
     def file_OpenFile(self, FileName):
         """
@@ -388,7 +407,7 @@ def cal_period(jointdisp, jointmass, group):
 
     return dict_period
 
-def cal_eqforce(jointdisp, jointmass, group, eqfactor):
+def cal_eqforce(jointdisp, jointmass, group, eqfactor, vpa):
     dict_eqforce = {}
     for gp in group:
         dict_disp = jointdisp[gp]
@@ -406,19 +425,33 @@ def cal_eqforce(jointdisp, jointmass, group, eqfactor):
 
         beta = abs(sum(wu.values()))
         zeta = sum(wuu.values())
+        all_mass = sum(mass_by_node.values())
+        baseshear = all_mass * 9.81 * eqfactor[group.index(gp)]
+        baseshear_vpa = baseshear * vpa
 
         # 計算節點地震力
         # [sum(wu)/sum(wuu)]*wu*(V/W) = (beta/zeta)*wu*eqfactor
-        eqf = {node: (beta/zeta) * eqfactor[group.index(gp)]*9.81 * mass_by_node[node] * disp_by_node[node] for node in disp_by_node.keys() & mass_by_node.keys()}
-        
+        eqf_temp = {node: (beta/zeta) * eqfactor[group.index(gp)]*9.81 * mass_by_node[node] * disp_by_node[node] for node in disp_by_node.keys() & mass_by_node.keys()}
+
+        sumeqf = abs(sum(eqf_temp.values()))
+        if sumeqf >= baseshear_vpa:
+            eqf = eqf_temp
+        else:
+            print("[警告]：第一振態分佈力總和未達總基底剪力{}%！".format(vpa*100))
+            scaling_factor = baseshear_vpa / sumeqf
+            eqf = {node: force * scaling_factor for node, force in eqf_temp.items()}
+
         dict_eqforce[gp] = {}
         dict_eqforce[gp]['beta'] = beta
         dict_eqforce[gp]['zeta'] = zeta
         dict_eqforce[gp]['eqfactor'] = eqfactor[group.index(gp)]
+        dict_eqforce[gp]['TotalMass'] = all_mass
+        dict_eqforce[gp]['BaseShear'] = baseshear
         dict_eqforce[gp]['mass'] = mass_by_node
         dict_eqforce[gp]['disp'] = disp_by_node
         dict_eqforce[gp]['wuu'] = wuu
         dict_eqforce[gp]['wu'] = wu
+        dict_eqforce[gp]['eqforce_origin'] = eqf_temp
         dict_eqforce[gp]['eqforce'] = eqf
 
     return dict_eqforce
@@ -556,6 +589,99 @@ def export_results_to_excel(period_x, period_y, period_z, output_path):
 
     print(f"[訊息]：計算結果已成功匯出至：{output_path}")
 
+def export_eqforce_to_excel(eqforce_x, eqforce_y, eqforce_z, output_path):
+    """
+    將計算出的地震力結果彙整並輸出至包含多個工作表的 Excel 檔案。
+
+    - 'EQForce Summary': 各群組與方向的總地震力。
+    - 'Group-Direction': 各群組與方向的詳細節點力、質量與位移。
+
+    參數:
+        eqforce_x (dict): X 方向的地震力計算結果。
+        eqforce_y (dict): Y 方向的地震力計算結果。
+        eqforce_z (dict): Z 方向的地震力計算結果。
+        output_path (str): Excel 檔案的完整輸出路徑。
+    """
+    with pd.ExcelWriter(output_path, engine='openpyxl') as writer:
+        # 1. 彙整總覽結果
+        summary_data = []
+        for direction, force_data in [('X', eqforce_x), ('Y', eqforce_y), ('Z', eqforce_z)]:
+            for group_name, data in force_data.items():
+                total_force = sum(data.get('eqforce', {}).values())
+                summary_data.append({
+                    'Group': group_name,
+                    'Direction': direction,
+                    'Total Force': total_force,
+                    'EQ Factor': data.get('eqfactor'),
+                    'Sum(wu) (beta)': data.get('beta'),
+                    'Sum(wuu) (zeta)': data.get('zeta'),
+                    'Total Mass': data.get('TotalMass'),
+                    'Base Shear': data.get('BaseShear')
+                })
+        df_summary = pd.DataFrame(summary_data)
+        # 調整總覽表的欄位順序
+        summary_cols = ['Group', 'Direction', 'Total Force', 'EQ Factor', 'Sum(wu) (beta)', 'Sum(wuu) (zeta)', 'Total Mass', 'Base Shear']
+        # 篩選掉值全為 None 的欄位 (例如 Z 方向沒有 beta, zeta)
+        df_summary = df_summary.dropna(axis=1, how='all')
+        # 確保欄位順序正確
+        ordered_cols = [col for col in summary_cols if col in df_summary.columns]
+        df_summary[ordered_cols].to_excel(writer, sheet_name='EQForce Summary', index=False, float_format="%.4f")
+
+        # 2. 遍歷每個方向和群組，寫入詳細的節點力工作表
+        for direction, force_data in [('X', eqforce_x), ('Y', eqforce_y), ('Z', eqforce_z)]:
+            for group_name, data in force_data.items():
+                node_forces = data.get('eqforce', {})
+                node_forces_origin = data.get('eqforce_origin', {})
+                node_masses = data.get('mass', {})
+                node_disps = data.get('disp', {})  # Z 方向的 data 中沒有 'disp'
+                node_wu = data.get('wu', {})      # X, Y 方向的中間計算值
+                node_wuu = data.get('wuu', {})    # X, Y 方向的中間計算值
+
+                all_nodes = sorted(
+                    list(node_forces.keys()),
+                    key=lambda x: (0, int(x)) if x.isdigit() else (1, x)
+                )
+
+                detail_data = []
+                for node in all_nodes:
+                    row = {
+                        'Node': node,
+                        'Mass': node_masses.get(node),
+                        'Force': node_forces.get(node)
+                    }
+                    # 只有 X, Y 方向的計算結果包含位移
+                    if node_disps:
+                        row['Displacement'] = node_disps.get(node)
+                    if node_wu:
+                        row['wu'] = node_wu.get(node)
+                    if node_wuu:
+                        row['wuu'] = node_wuu.get(node)
+                    if node_forces_origin:
+                        row['Force_Origin'] = node_forces_origin.get(node)
+                    detail_data.append(row)
+
+                if not detail_data:
+                    continue
+
+                df_details = pd.DataFrame(detail_data)
+                # 調整欄位順序，確保 Displacement 在 Force 之前
+                detail_cols = ['Node', 'Mass']
+                if 'Displacement' in df_details.columns:
+                    detail_cols.append('Displacement')
+                if 'wu' in df_details.columns:
+                    detail_cols.append('wu')
+                if 'wuu' in df_details.columns:
+                    detail_cols.append('wuu')
+                if 'Force_Origin' in df_details.columns:
+                    detail_cols.append('Force_Origin')
+                detail_cols.append('Force')
+                df_details = df_details[detail_cols]
+
+                sheet_name = f"{group_name}-{direction}"[:31]
+                df_details.to_excel(writer, index=False, sheet_name=sheet_name, float_format="%.6e")
+
+    print(f"[訊息]：地震力計算結果已成功匯出至：{output_path}")
+
 def setup_and_run_sap_analysis(model_path):
     """
     開啟 SAP2000 模型，設定並執行分析。
@@ -663,108 +789,151 @@ def run_analysis_period(model_path, groups_x, groups_y, groups_z):
 
     output_excel_path = os.path.join(os.path.dirname(model_path), '01_period_results.xlsx')
     export_results_to_excel(period_x, period_y, period_z, output_excel_path)
+    print("[訊息]：計算輸出完成！")
+
+def run_analysis_eqforce(model_path, groups_x, groups_y, groups_z, eqfactor_x, eqfactor_y, eqfactor_z, v_percent):
+    # --- 1. 開啟模型並執行分析 ---
+    sapmodel = setup_and_run_sap_analysis(model_path)
+
+    # --- 2. 獲取分析結果 ---
+    # 獲取 X 和 Y 方向的位移與質量
+    jointdisp_x = get_disp(sapmodel, 'UNIT-X', groups_x, 7)
+    jointdisp_y = get_disp(sapmodel, 'UNIT-Y', groups_y, 8)
+    jointdisp_z = get_disp(sapmodel, 'UNIT-Z', groups_z, 9)
+    jointmass_x = get_mass(sapmodel, groups_x, 3)
+    jointmass_y = get_mass(sapmodel, groups_y, 4)
+    jointmass_z = get_mass(sapmodel, groups_z, 5)
+
+    # --- 3. 計算分析橫力 ---
+    # 計算X, Y方向地震節點力
+    eqforce_x = cal_eqforce(jointdisp_x, jointmass_x, groups_x, eqfactor_x, v_percent)
+    eqforce_y = cal_eqforce(jointdisp_y, jointmass_y, groups_y, eqfactor_y, v_percent)
+
+    # 將各群組的地震力合併為單一字典
+    EQF_x = merge_force_data(eqforce_x)
+    EQF_y = merge_force_data(eqforce_y)
+    
+    # --- 4. 計算分析垂直力 ---
+    # 計算Z方向地震節點力
+    eqforce_z = cal_eqvforce(jointdisp_z, jointmass_z, groups_z, eqfactor_z)
+    
+    # 將各群組的地震力合併為單一字典
+    EQF_z = merge_force_data(eqforce_z)
+    print("[訊息]：分布力計算完成！")
+
+    # --- 5. Assign地震力 ---
+    presentcoordsystem = sapmodel.getCoordSystem()
+    status_lock = sapmodel.getModelIsLocked()
+    if status_lock:
+        sapmodel.setModelIsLocked(False)
+    # EQ Load Cases設定
+    lc_list = sapmodel.loadcases_getnamelist()
+    for case in ['EQL', 'EQT', 'EQV']:
+        if case not in lc_list[2]:
+            sapmodel.define_LoadPatterns_Add(case,5)
+            sapmodel.define_LoadCases_StaticLinear_SetCase(case)
+            sapmodel.define_LoadCases_StaticLinear_SetLoads(case, 1, ["Load"], [case], [1])
+
+    # 地震力加載
+    def eqforce_apply(lclabel, group, EQF, presentcoordsystem):
+        sapmodel.deltet_Pointobj_Deleteloadforce('ALL', lclabel, 1)
+        sapmodel.clearSelection()
+        for sg in group:
+            sapmodel.selectGroup(sg)
+        res = sapmodel.getSelected()
+        objdict = dict(zip(res[3], res[2])) # res[3]為object name, res[2]為object type
+        for objname, objtype in objdict.items():
+            if objtype == 1:
+                value = EQF.get(objname)
+                if value is None:
+                    continue
+                if lclabel == 'EQL':
+                    forcedof = [value,0,0,0,0,0]
+                elif lclabel == 'EQT':
+                    forcedof = [0,value,0,0,0,0]
+                elif lclabel == 'EQV':
+                    forcedof = [0,0,value,0,0,0]
+                else:
+                    print('[錯誤]: 地震LoadCase命名有誤')
+                    os._exit(-1)
+                sapmodel.assign_PointObj_SetLoadForce(objname,lclabel,forcedof,Replace=True,CSys=presentcoordsystem,ItemType=0)
+
+    eqforce_apply('EQL', groups_x, EQF_x, presentcoordsystem)
+    eqforce_apply('EQT', groups_y, EQF_y, presentcoordsystem)
+    eqforce_apply('EQV', groups_z, EQF_z, presentcoordsystem)
+    print("[訊息]：地震力施加完成！")
+
+    # 關閉 SAP2000
+    sapmodel.file_Save(model_path)
+    sapmodel.closeModel()
+    print("[訊息]：SAP2000關閉。")
+
+    # --- 6. 輸出地震力結果 ---
+    output_excel_path = os.path.join(os.path.dirname(model_path), '02_eqforce_results.xlsx')
+    export_eqforce_to_excel(eqforce_x, eqforce_y, eqforce_z, output_excel_path)
+
+class Logger(object):
+    """
+    一個日誌記錄器類別，可以將輸出同時寫入終端和檔案。
+    """
+    def __init__(self, filename="pyeqlog.log", stream=sys.stdout):
+        self.terminal = stream
+        # 使用 utf-8 編碼以支援中文字元
+        self.log = open(filename, "w", encoding='utf-8')
+
+    def write(self, message):
+        """將訊息寫入終端和日誌檔案。"""
+        self.terminal.write(message)
+        self.log.write(message)
+        self.flush() # 確保即時寫入
+
+    def flush(self):
+        """刷新緩衝區，確保所有內容都已寫入。"""
+        self.terminal.flush()
+        self.log.flush()
+
+    def __getattr__(self, attr):
+        """將其他屬性請求代理給原始流對象。"""
+        return getattr(self.terminal, attr)
 
 
 if __name__ == "__main__":
     # TODO: 此處先指定GROUP，後續須配合UI傳入變數變換
-    groups_to_run_x = ['ALL', 'Pier1']
+    groups_to_run_x = ['Pier1','Pier2']
     groups_to_run_y = ['ALL']
-    groups_to_run_z = ['Pier1', 'Pier2']
-
-    # 執行主流程
-    # run_analysis_period(
-    #     MODEL_PATH, 
-    #     groups_to_run_x, 
-    #     groups_to_run_y, 
-    #     groups_to_run_z
-    # )
+    groups_to_run_z = ['ALL']
 
     eqfactor_to_run_x = [0.15, 0.15]
     eqfactor_to_run_y = [0.15]
     eqfactor_to_run_z = [0.15, 0.05]
+    eqpercent = 0.9
 
-    def run_analysis_eqforce(model_path, groups_x, groups_y, groups_z, eqfactor_x, eqfactor_y, eqfactor_z):
-        # --- 1. 開啟模型並執行分析 ---
-        sapmodel = setup_and_run_sap_analysis(model_path)
+    # --- 設定日誌記錄 ---
+    # 將日誌檔案儲存在模型檔案所在的目錄下
+    log_file_path = os.path.join(os.path.dirname(MODEL_PATH), 'pyeqlog.log')
+    original_stdout = sys.stdout
+    sys.stdout = Logger(log_file_path, original_stdout)
 
-        # --- 2. 獲取分析結果 ---
-        # 獲取 X 和 Y 方向的位移與質量
-        jointdisp_x = get_disp(sapmodel, 'UNIT-X', groups_x, 7)
-        jointdisp_y = get_disp(sapmodel, 'UNIT-Y', groups_y, 8)
-        jointdisp_z = get_disp(sapmodel, 'UNIT-Z', groups_z, 9)
-        jointmass_x = get_mass(sapmodel, groups_x, 3)
-        jointmass_y = get_mass(sapmodel, groups_y, 4)
-        jointmass_z = get_mass(sapmodel, groups_z, 5)
+    try:
+        # --- 執行主流程 ---
+        # run_analysis_period(
+        #     MODEL_PATH, 
+        #     groups_to_run_x, 
+        #     groups_to_run_y, 
+        #     groups_to_run_z
+        # )
 
-        # --- 3. 計算分析橫力 ---
-        # 計算X, Y方向地震節點力
-        eqforce_x = cal_eqforce(jointdisp_x, jointmass_x, groups_x, eqfactor_x)
-        eqforce_y = cal_eqforce(jointdisp_y, jointmass_y, groups_y, eqfactor_y)
-
-        # 將各群組的地震力合併為單一字典
-        EQF_x = merge_force_data(eqforce_x)
-        EQF_y = merge_force_data(eqforce_y)
-        
-        # --- 4. 計算分析垂直力 ---
-        # 計算Z方向地震節點力
-        eqforce_z = cal_eqvforce(jointdisp_z, jointmass_z, groups_z, eqfactor_z)
-        
-        # 將各群組的地震力合併為單一字典
-        EQF_z = merge_force_data(eqforce_z)
-        print("[訊息]：分布力計算完成！")
-
-        # --- 5. Assign地震力 ---
-        presentcoordsystem = sapmodel.getCoordSystem()
-        status_lock = sapmodel.getModelIsLocked()
-        if status_lock:
-            sapmodel.setModelIsLocked(False)
-        # EQ Load Cases設定
-        lc_list = sapmodel.loadcases_getnamelist()
-        for case in ['EQL', 'EQT', 'EQV']:
-            if case not in lc_list[2]:
-                sapmodel.define_LoadPatterns_Add(case,5)
-                sapmodel.define_LoadCases_StaticLinear_SetCase(case)
-                sapmodel.define_LoadCases_StaticLinear_SetLoads(case, 1, ["Load"], [case], [1])
-
-        # 地震力加載
-        def eqforce_apply(lclabel, group, EQF, presentcoordsystem):
-            sapmodel.deltet_Pointobj_Deleteloadforce('ALL', lclabel, 1)
-            sapmodel.clearSelection()
-            for sg in group:
-                sapmodel.selectGroup(sg)
-            res = sapmodel.getSelected()
-            objdict = dict(zip(res[3], res[2])) # res[3]為object name, res[2]為object type
-            for objname, objtype in objdict.items():
-                if objtype == 1:
-                    value = EQF[objname]
-                    if lclabel == 'EQL':
-                        forcedof = [value,0,0,0,0,0]
-                    elif lclabel == 'EQT':
-                        forcedof = [0,value,0,0,0,0]
-                    elif lclabel == 'EQV':
-                        forcedof = [0,0,value,0,0,0]
-                    else:
-                        print('[錯誤]: 地震LoadCase命名有誤')
-                        os._exit(-1)
-                    sapmodel.assign_PointObj_SetLoadForce(objname,lclabel,forcedof,Replace=True,CSys=presentcoordsystem,ItemType=0)
-
-        eqforce_apply('EQL', groups_x, EQF_x, presentcoordsystem)
-        eqforce_apply('EQT', groups_y, EQF_y, presentcoordsystem)
-        eqforce_apply('EQV', groups_z, EQF_z, presentcoordsystem)
-        print("[訊息]：地震力施加完成！")
-
-        # 關閉 SAP2000
-        sapmodel.file_Save(model_path)
-        sapmodel.closeModel()
-        print("[訊息]：SAP2000關閉。")
-
-
-    run_analysis_eqforce(
-        MODEL_PATH, 
-        groups_to_run_x, 
-        groups_to_run_y, 
-        groups_to_run_z,
-        eqfactor_to_run_x, 
-        eqfactor_to_run_y, 
-        eqfactor_to_run_z
-    )
+        run_analysis_eqforce(
+            MODEL_PATH, 
+            groups_to_run_x, 
+            groups_to_run_y, 
+            groups_to_run_z,
+            eqfactor_to_run_x, 
+            eqfactor_to_run_y, 
+            eqfactor_to_run_z,
+            eqpercent
+        )
+    finally:
+        # --- 還原標準輸出並關閉檔案 ---
+        sys.stdout = original_stdout
+        print(f"[訊息]：日誌已寫入 {log_file_path}")
