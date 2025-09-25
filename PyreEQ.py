@@ -909,10 +909,12 @@ def run_analysis_eqforce(model_path, groups_x, groups_y, groups_z, eqfactor_x, e
         for sg in group:
             sapmodel.selectGroup(sg)
         res = sapmodel.getSelected()
-        objdict = dict(zip(res[3], res[2])) # res[3]為object name, res[2]為object type
-        for objname, objtype in objdict.items():
-            if objtype == 1:
-                value = EQF.get(objname)
+        objname = list(res[3])  # res[3]為object name, res[2]為object type
+        objtype = list(res[2])
+
+        for i, objn in enumerate(objname):
+            if objtype[i] == 1:
+                value = EQF.get(objn)
                 if value is None:
                     continue
                 if lclabel == 'EQL':
@@ -924,7 +926,7 @@ def run_analysis_eqforce(model_path, groups_x, groups_y, groups_z, eqfactor_x, e
                 else:
                     print('[錯誤]: 地震LoadCase命名有誤')
                     os._exit(-1)
-                sapmodel.assign_PointObj_SetLoadForce(objname,lclabel,forcedof,Replace=True,CSys=presentcoordsystem,ItemType=0)
+                sapmodel.assign_PointObj_SetLoadForce(objn,lclabel,forcedof,Replace=True,CSys=presentcoordsystem,ItemType=0)
 
     eqforce_apply('EQL', groups_x, EQF_x, presentcoordsystem)
     eqforce_apply('EQT', groups_y, EQF_y, presentcoordsystem)

@@ -8,7 +8,7 @@ import sys
 
 # 專案設定
 # 這裡請替換為你要開啟的模型檔案路徑
-MODEL_PATH = r"D:\Users\63427\Desktop\Code\EQ2SAP\example\model_test.sdb"
+MODEL_PATH = r"D:\Users\63427\Desktop\Code\PyreEQ\example\MODEL1-eq.sdb"
 
 
 class Sap2000(object):
@@ -841,10 +841,12 @@ def run_analysis_eqforce(model_path, groups_x, groups_y, groups_z, eqfactor_x, e
         for sg in group:
             sapmodel.selectGroup(sg)
         res = sapmodel.getSelected()
-        objdict = dict(zip(res[3], res[2])) # res[3]為object name, res[2]為object type
-        for objname, objtype in objdict.items():
-            if objtype == 1:
-                value = EQF.get(objname)
+        objname = list(res[3])  # res[3]為object name, res[2]為object type
+        objtype = list(res[2])
+
+        for i, objn in enumerate(objname):
+            if objtype[i] == 1:
+                value = EQF.get(objn)
                 if value is None:
                     continue
                 if lclabel == 'EQL':
@@ -856,7 +858,7 @@ def run_analysis_eqforce(model_path, groups_x, groups_y, groups_z, eqfactor_x, e
                 else:
                     print('[錯誤]: 地震LoadCase命名有誤')
                     os._exit(-1)
-                sapmodel.assign_PointObj_SetLoadForce(objname,lclabel,forcedof,Replace=True,CSys=presentcoordsystem,ItemType=0)
+                sapmodel.assign_PointObj_SetLoadForce(objn,lclabel,forcedof,Replace=True,CSys=presentcoordsystem,ItemType=0)
 
     eqforce_apply('EQL', groups_x, EQF_x, presentcoordsystem)
     eqforce_apply('EQT', groups_y, EQF_y, presentcoordsystem)
@@ -899,13 +901,13 @@ class Logger(object):
 
 if __name__ == "__main__":
     # TODO: 此處先指定GROUP，後續須配合UI傳入變數變換
-    groups_to_run_x = ['Pier1','Pier2']
+    groups_to_run_x = ['ALL']
     groups_to_run_y = ['ALL']
-    groups_to_run_z = ['Pier1','Pier2']
+    groups_to_run_z = ['ALL']
 
-    eqfactor_to_run_x = [0.15, 0.15]
+    eqfactor_to_run_x = [0.15]
     eqfactor_to_run_y = [0.15]
-    eqfactor_to_run_z = [0.15, 0.05]
+    eqfactor_to_run_z = [0.15]
     eqpercent = 0.9
 
     # --- 設定日誌記錄 ---
@@ -916,23 +918,23 @@ if __name__ == "__main__":
 
     try:
         # --- 執行主流程 ---
-        run_analysis_period(
-            MODEL_PATH, 
-            groups_to_run_x, 
-            groups_to_run_y, 
-            groups_to_run_z
-        )
-
-        # run_analysis_eqforce(
+        # run_analysis_period(
         #     MODEL_PATH, 
         #     groups_to_run_x, 
         #     groups_to_run_y, 
-        #     groups_to_run_z,
-        #     eqfactor_to_run_x, 
-        #     eqfactor_to_run_y, 
-        #     eqfactor_to_run_z,
-        #     eqpercent
+        #     groups_to_run_z
         # )
+
+        run_analysis_eqforce(
+            MODEL_PATH, 
+            groups_to_run_x, 
+            groups_to_run_y, 
+            groups_to_run_z,
+            eqfactor_to_run_x, 
+            eqfactor_to_run_y, 
+            eqfactor_to_run_z,
+            eqpercent
+        )
     finally:
         # --- 還原標準輸出並關閉檔案 ---
         sys.stdout = original_stdout
