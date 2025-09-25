@@ -1,15 +1,19 @@
-# -*- coding: utf-8 -*-
-import win32com.client as win32
-import os
-import pandas as pd
-import math
-import pythoncom
 import sys
-
-# 專案設定
-# 這裡請替換為你要開啟的模型檔案路徑
-MODEL_PATH = r"D:\Users\63427\Desktop\Code\EQ2SAP\example\model_test.sdb"
-
+import os
+import pythoncom
+import win32com.client as win32
+import psutil 
+import math
+import pandas as pd
+from PySide6.QtCore import Slot
+from PySide6.QtCore import QFile, QThread, QObject, Signal, QEventLoop, QTimer
+from PySide6.QtUiTools import QUiLoader
+from PySide6.QtGui import QIcon, QTextCursor
+from PySide6.QtWidgets import QApplication, QFileDialog, QTableWidgetItem
+import ctypes
+import gc
+myappid = 'PreEQ' # arbitrary string
+ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
 class Sap2000(object):
     """
@@ -19,6 +23,26 @@ class Sap2000(object):
     def __init__(self):
         self.SapObject = None
         self.SapModel = None
+
+    def launch_sap(self):
+        """
+        僅啟動或附加到 SAP2000 實例，但不初始化新模型。
+        """
+        try:
+            # 嘗試獲取一個正在運行的 SAP2000 實例
+            self.SapObject = win32.GetActiveObject("SAP2000.SapObject")
+            print("[訊息]：已成功附加到現有的 SAP2000 實例。")
+        except pythoncom.com_error:
+            # 如果沒有正在運行的實例，則創建一個新的
+            print("[訊息]：未找到正在運行的 SAP2000 實例，正在啟動新實例...")
+            try:
+                self.SapObject = win32.Dispatch("SAP2000.SapObject")
+                self.SapObject.ApplicationStart()
+            except pythoncom.com_error:
+                print("[錯誤]：無法啟動 SAP2000。請檢查 SAP2000 是否已正確安裝，並手動關閉所有背景中的 'SAP2000.exe' 程序後再試。")
+                exit(1)
+        
+        self.SapModel = self.SapObject.SapModel
 
     def initializeNewModel(self, unitsTag=12):
         """
@@ -72,9 +96,45 @@ class Sap2000(object):
         ---close SAP2000 model---
         """
         # close SAP2000 model
-        self.SapObject.ApplicationExit(True) #True means save the model before close,False otherwise.
-        self.SapModel=0 # release the memory
-        self.SapObject=0 # release the memory
+        # self.SapObject.ApplicationExit(True) #True means save the model before close,False otherwise.
+        # self.SapModel=0 # release the memory
+        # self.SapObject=0 # release the memory
+        PROGRAM_TO_KILL = "SAP2000.exe" 
+        # 1. 嘗試優雅地關閉應用程式（仍然必須保留）
+        if self.SapObject is not None:
+            try:
+                print("Attempting ApplicationExit...")
+                self.SapObject.ApplicationExit(True) 
+            except Exception:
+                pass # 忽略錯誤，繼續強制終止
+                
+        # 2. 清理 Python 變數和 COM 引用
+        # 確保 SapModel 和 SapObject 變數都被釋放
+        self.SapModel = None
+        self.SapObject = None
+        gc.collect() 
+        
+        # 3. === 核心步驟：使用 Windows taskkill /F /IM 強制終止 ===
+        
+        # 使用 psutil 找出所有匹配的程序並終止
+        terminated_count = 0
+        for proc in psutil.process_iter(['name']):
+            if proc.info['name'].lower() == PROGRAM_TO_KILL.lower():
+                try:
+                    print(f"Forcefully terminating process: {PROGRAM_TO_KILL} (PID: {proc.pid})")
+                    proc.kill() # 強制終止
+                    terminated_count += 1
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    # 如果程序不存在或權限不足，則忽略
+                    pass
+
+        if terminated_count > 0:
+            print(f"Successfully killed {terminated_count} '{PROGRAM_TO_KILL}' process(es).")
+        else:
+            print(f"No active '{PROGRAM_TO_KILL}' found to kill. Check program name.")
+        
+        print("SAP2000 shutdown process complete.")
+
 
     def setUnits(self, unitsTag):
         """
@@ -345,6 +405,59 @@ class Sap2000(object):
         """
         self.SapModel.PointObj.SetLoadForce(name,loadPat,value,Replace,CSys,ItemType)
 
+def setup_and_run_sap_analysis(model_path):
+    """
+    開啟 SAP2000 模型，設定並執行分析。
+
+    1. 開啟並準備 SAP2000 模型。
+    2. 設定並執行單位力載重分析。
+
+    參數:
+        model_path (str): SAP2000 模型檔案的完整路徑。
+
+    回傳:
+        Sap2000: 已執行分析的 Sap2000 物件。
+    """
+    # --- 1. 模型物件創建及控制 ---
+    sapmodel = Sap2000()
+    sapmodel.initializeNewModel()
+
+    if not os.path.exists(model_path):
+        print(f"[錯誤]：找不到模型檔案 -> {model_path}")
+        exit(1)
+
+    print(f"[訊息]：正在開啟模型檔案：{model_path}...")
+    sapmodel.file_OpenFile(model_path)
+    print("[訊息]：模型已成功開啟！")
+    sapmodel.setUnits(12)
+
+    # --- 2. 分析用力量加載及計算 ---
+    status_lock = sapmodel.getModelIsLocked()
+    if status_lock:
+        sapmodel.setModelIsLocked(False)
+    lc_unit = {"UNIT-X": "UX", "UNIT-Y": "UY", "UNIT-Z": "UZ"}
+    for lc, dir_name in lc_unit.items():
+        sapmodel.define_LoadCases_StaticLinear_SetCase(lc)
+        sapmodel.define_LoadCases_StaticLinear_SetLoads(lc, 1, ["Accel"], [dir_name], [9.81])
+    print("[訊息]：單位均佈力載重設定完成！")
+
+    _, num_lc, namelist_lc = sapmodel.loadcases_getnamelist()
+    namelist_lc = list(namelist_lc)
+    eqlc_list = list(lc_unit.keys())
+    #sapmodel.file_Save(model_path)
+    for lc in namelist_lc:
+        if lc in eqlc_list:
+            sapmodel.analyze_SetRunCaseFlag(lc, True)
+        else:
+            sapmodel.analyze_SetRunCaseFlag(lc, False)
+
+    runstatus = sapmodel.analyze_RunAnalysis()
+    if runstatus != 0:
+        print("[警告]：模型分析未成功執行。")
+    else:
+        print("[訊息]：模型分析完成！")
+    
+    return sapmodel
 
 def get_disp(sapobj, lc_dir, gp_list, disp_note):
     jointdisp = {}
@@ -406,6 +519,169 @@ def cal_period(jointdisp, jointmass, group):
         dict_period[gp]['disp'] = disp_by_node
 
     return dict_period
+
+def merge_group_data(data_dict, new_group_name):
+    """
+    將來自多個群組的資料字典合併為單一群組。
+    處理重複節點時，會保留第一個遇到的節點資料。
+
+    Args:
+        data_dict (dict): 來自 get_disp 或 get_mass 的字典，例如 {'Pier1': {...}, 'Pier2': {...}}。
+        new_group_name (str): 新合併群組的名稱。
+        
+    Returns:
+        dict: 包含單一合併群組條目的字典，例如 {'Piers_Combined': {...}}。
+    """
+    if not data_dict:
+        return {new_group_name: {'node_num': 0, 'node_name': [], 'node_data': []}}
+
+    # 確定資料是位移('node_disp')還是質量('node_mass')
+    first_group_data = next(iter(data_dict.values()))
+    data_key = 'node_disp' if 'node_disp' in first_group_data else 'node_mass'
+
+    all_node_names = []
+    all_node_data = []
+
+    for group_data in data_dict.values():
+        all_node_names.extend(group_data.get('node_name', []))
+        all_node_data.extend(group_data.get(data_key, []))
+
+    # 透過字典來處理重複節點，保留第一個出現的值
+    unique_nodes = {}
+    for name, data_val in zip(all_node_names, all_node_data):
+        if name not in unique_nodes:
+            unique_nodes[name] = data_val
+            
+    merged_data = {
+        'node_num': len(unique_nodes),
+        'node_name': list(unique_nodes.keys()),
+        data_key: list(unique_nodes.values())
+    }
+    
+    return {new_group_name: merged_data}
+
+def export_results_to_excel(period_x, period_y, period_z, output_path):
+    """
+    將計算結果彙整並輸出至包含多個工作表的 Excel 檔案。
+
+    - 'Period Calculation': 週期計算總覽。
+    - 'Group-Direction': 各群組與方向的詳細節點質量與位移。
+
+    參數:
+        period_x (dict): X 方向的週期計算結果。
+        period_y (dict): Y 方向的週期計算結果。
+        period_z (dict): Z 方向的週期計算結果。
+        output_path (str): Excel 檔案的完整輸出路徑。
+    """
+    # 1. 彙整總覽結果
+    all_results = []
+    for direction, period_data in [('X', period_x), ('Y', period_y), ('Z', period_z)]:
+        for group_name, data in period_data.items():
+            all_results.append({
+                'Group': group_name,
+                'Direction': direction,
+                'Period (s)': data['period'],
+                'Sum(wu)': data['beta'],
+                'Sum(wuu)': data['zeta']
+            })
+    df_results = pd.DataFrame(all_results)
+
+    # 2. 使用 pd.ExcelWriter 寫入多個工作表
+    with pd.ExcelWriter(output_path, engine='openpyxl') as writer:
+        # 2a. 寫入週期計算總表
+        df_results.to_excel(writer, index=False, sheet_name='Period Calculation', float_format="%.4f")
+
+        # 2b. 遍歷每個方向和群組，寫入詳細的 disp 和 mass 工作表
+        for direction, period_data in [('X', period_x), ('Y', period_y), ('Z', period_z)]:
+            for group_name, data in period_data.items():
+                mass_dict = data.get('mass', {})
+                disp_dict = data.get('disp', {})
+                
+                all_nodes = sorted(
+                    list(mass_dict.keys() | disp_dict.keys()), 
+                    key=lambda x: (0, int(x)) if x.isdigit() else (1, x)
+                )
+
+                detail_data = []
+                for node in all_nodes:
+                    detail_data.append({
+                        'Node': node,
+                        'Mass': mass_dict.get(node),
+                        'Displacement': disp_dict.get(node)
+                    })
+                
+                if not detail_data:
+                    continue
+
+                df_details = pd.DataFrame(detail_data)
+                sheet_name = f"{group_name}-{direction}"[:31]
+                df_details.to_excel(writer, index=False, sheet_name=sheet_name, float_format="%.6e")
+
+    print(f"[訊息]：計算結果已成功匯出至：{output_path}")
+
+def run_analysis_period(model_path, groups_x, groups_y, groups_z):
+    """
+    執行完整的 SAP2000 週期分析流程，並回傳結果。
+    執行完整的 SAP2000 週期分析與結果匯出流程。
+
+    1. 開啟模型並執行分析。
+    2. 提取位移與質量，計算各群組與方向的週期。
+    3. 將結果印至主控台並匯出至 Excel 檔案。
+
+    參數:
+        model_path (str): SAP2000 模型檔案的完整路徑。
+        groups_x (list): 要在 X 方向分析的群組名稱列表。
+        groups_y (list): 要在 Y 方向分析的群組名稱列表。
+        groups_z (list): 要在 Z 方向分析的群組名稱列表。
+
+    回傳:
+        tuple: (period_x, period_y, period_z)
+            - period_x (dict): X 方向的週期計算結果。
+            - period_y (dict): Y 方向的週期計算結果。
+            - period_z (dict): Z 方向的週期計算結果。
+    """
+    # --- 1. 開啟模型並執行分析 ---
+    sapmodel = setup_and_run_sap_analysis(model_path)
+
+    # --- 2. 獲取分析結果並計算週期 ---
+    # 獲取 X 和 Y 方向的位移與質量
+    jointdisp_x = get_disp(sapmodel, 'UNIT-X', groups_x, 7)
+    jointdisp_y = get_disp(sapmodel, 'UNIT-Y', groups_y, 8)
+    jointmass_x = get_mass(sapmodel, groups_x, 3)
+    jointmass_y = get_mass(sapmodel, groups_y, 4)
+
+    # 對於 Z 方向，獲取結果後合併為一個群組
+    raw_jointdisp_z = get_disp(sapmodel, 'UNIT-Z', groups_z, 9)
+    raw_jointmass_z = get_mass(sapmodel, groups_z, 5)
+    merged_z_group_name = 'StructZdir'
+    jointdisp_z = merge_group_data(raw_jointdisp_z, merged_z_group_name)
+    jointmass_z = merge_group_data(raw_jointmass_z, merged_z_group_name)
+
+    period_x = cal_period(jointdisp_x, jointmass_x, groups_x)
+    period_y = cal_period(jointdisp_y, jointmass_y, groups_y)
+    # Z 方向週期計算使用合併後的單一群組
+    period_z = cal_period(jointdisp_z, jointmass_z, [merged_z_group_name])
+    
+    print("[訊息]：週期計算完成！")
+
+    # 關閉 SAP2000
+    #sapmodel.file_Save(model_path)
+    sapmodel.closeModel()
+
+
+    # --- 3. 輸出週期結果 ---
+    # print("\n--- Calculated Periods ---")
+    # for group_name, data in period_x.items():
+    #     print(f"Direction: X, Group: {group_name:<10} Period: {data['period']:.4f} s")
+    # for group_name, data in period_y.items():
+    #     print(f"Direction: Y, Group: {group_name:<10} Period: {data['period']:.4f} s")
+    # for group_name, data in period_z.items():
+    #     print(f"Direction: Z, Group: {group_name:<10} Period: {data['period']:.4f} s")
+
+    output_excel_path = os.path.join(os.path.dirname(model_path), '01_period_results.xlsx')
+    export_results_to_excel(period_x, period_y, period_z, output_excel_path)
+    print("[訊息]：計算輸出完成！")
+    return period_x, period_y, period_z
 
 def cal_eqforce(jointdisp, jointmass, group, eqfactor, vpa):
     dict_eqforce = {}
@@ -472,46 +748,6 @@ def cal_eqvforce(jointdisp, jointmass, group, eqfactor):
 
     return dict_eqforce
 
-def merge_group_data(data_dict, new_group_name):
-    """
-    將來自多個群組的資料字典合併為單一群組。
-    處理重複節點時，會保留第一個遇到的節點資料。
-
-    Args:
-        data_dict (dict): 來自 get_disp 或 get_mass 的字典，例如 {'Pier1': {...}, 'Pier2': {...}}。
-        new_group_name (str): 新合併群組的名稱。
-        
-    Returns:
-        dict: 包含單一合併群組條目的字典，例如 {'Piers_Combined': {...}}。
-    """
-    if not data_dict:
-        return {new_group_name: {'node_num': 0, 'node_name': [], 'node_data': []}}
-
-    # 確定資料是位移('node_disp')還是質量('node_mass')
-    first_group_data = next(iter(data_dict.values()))
-    data_key = 'node_disp' if 'node_disp' in first_group_data else 'node_mass'
-
-    all_node_names = []
-    all_node_data = []
-
-    for group_data in data_dict.values():
-        all_node_names.extend(group_data.get('node_name', []))
-        all_node_data.extend(group_data.get(data_key, []))
-
-    # 透過字典來處理重複節點，保留第一個出現的值
-    unique_nodes = {}
-    for name, data_val in zip(all_node_names, all_node_data):
-        if name not in unique_nodes:
-            unique_nodes[name] = data_val
-            
-    merged_data = {
-        'node_num': len(unique_nodes),
-        'node_name': list(unique_nodes.keys()),
-        data_key: list(unique_nodes.values())
-    }
-    
-    return {new_group_name: merged_data}
-
 def merge_force_data(force_data_dict):
     """
     將來自多個群組的 'eqforce' 字典合併為單一字典。
@@ -522,72 +758,13 @@ def merge_force_data(force_data_dict):
 
     Returns:
         dict: 一個包含所有合併後節點力的單一字典。
-              e.g., {'Node1': 10, 'Node2': 20}
+                e.g., {'Node1': 10, 'Node2': 20}
     """
     merged_forces = {}
     for group_data in force_data_dict.values():
         if 'eqforce' in group_data:
             merged_forces.update(group_data['eqforce'])
     return merged_forces
-
-def export_results_to_excel(period_x, period_y, period_z, output_path):
-    """
-    將計算結果彙整並輸出至包含多個工作表的 Excel 檔案。
-
-    - 'Period Calculation': 週期計算總覽。
-    - 'Group-Direction': 各群組與方向的詳細節點質量與位移。
-
-    參數:
-        period_x (dict): X 方向的週期計算結果。
-        period_y (dict): Y 方向的週期計算結果。
-        period_z (dict): Z 方向的週期計算結果。
-        output_path (str): Excel 檔案的完整輸出路徑。
-    """
-    # 1. 彙整總覽結果
-    all_results = []
-    for direction, period_data in [('X', period_x), ('Y', period_y), ('Z', period_z)]:
-        for group_name, data in period_data.items():
-            all_results.append({
-                'Group': group_name,
-                'Direction': direction,
-                'Period (s)': data['period'],
-                'Sum(wu)': data['beta'],
-                'Sum(wuu)': data['zeta']
-            })
-    df_results = pd.DataFrame(all_results)
-
-    # 2. 使用 pd.ExcelWriter 寫入多個工作表
-    with pd.ExcelWriter(output_path, engine='openpyxl') as writer:
-        # 2a. 寫入週期計算總表
-        df_results.to_excel(writer, index=False, sheet_name='Period Calculation', float_format="%.4f")
-
-        # 2b. 遍歷每個方向和群組，寫入詳細的 disp 和 mass 工作表
-        for direction, period_data in [('X', period_x), ('Y', period_y), ('Z', period_z)]:
-            for group_name, data in period_data.items():
-                mass_dict = data.get('mass', {})
-                disp_dict = data.get('disp', {})
-                
-                all_nodes = sorted(
-                    list(mass_dict.keys() | disp_dict.keys()), 
-                    key=lambda x: (0, int(x)) if x.isdigit() else (1, x)
-                )
-
-                detail_data = []
-                for node in all_nodes:
-                    detail_data.append({
-                        'Node': node,
-                        'Mass': mass_dict.get(node),
-                        'Displacement': disp_dict.get(node)
-                    })
-                
-                if not detail_data:
-                    continue
-
-                df_details = pd.DataFrame(detail_data)
-                sheet_name = f"{group_name}-{direction}"[:31]
-                df_details.to_excel(writer, index=False, sheet_name=sheet_name, float_format="%.6e")
-
-    print(f"[訊息]：計算結果已成功匯出至：{output_path}")
 
 def export_eqforce_to_excel(eqforce_x, eqforce_y, eqforce_z, output_path):
     """
@@ -682,115 +859,6 @@ def export_eqforce_to_excel(eqforce_x, eqforce_y, eqforce_z, output_path):
 
     print(f"[訊息]：地震力計算結果已成功匯出至：{output_path}")
 
-def setup_and_run_sap_analysis(model_path):
-    """
-    開啟 SAP2000 模型，設定並執行分析。
-
-    1. 開啟並準備 SAP2000 模型。
-    2. 設定並執行單位力載重分析。
-
-    參數:
-        model_path (str): SAP2000 模型檔案的完整路徑。
-
-    回傳:
-        Sap2000: 已執行分析的 Sap2000 物件。
-    """
-    # --- 1. 模型物件創建及控制 ---
-    sapmodel = Sap2000()
-    sapmodel.initializeNewModel()
-
-    if not os.path.exists(model_path):
-        print(f"[錯誤]：找不到模型檔案 -> {model_path}")
-        exit(1)
-
-    print(f"[訊息]：正在開啟模型檔案：{model_path}...")
-    sapmodel.file_OpenFile(model_path)
-    print("[訊息]：模型已成功開啟！")
-    sapmodel.setUnits(12)
-
-    # --- 2. 分析用力量加載及計算 ---
-    status_lock = sapmodel.getModelIsLocked()
-    if status_lock:
-        sapmodel.setModelIsLocked(False)
-    lc_unit = {"UNIT-X": "UX", "UNIT-Y": "UY", "UNIT-Z": "UZ"}
-    for lc, dir_name in lc_unit.items():
-        sapmodel.define_LoadCases_StaticLinear_SetCase(lc)
-        sapmodel.define_LoadCases_StaticLinear_SetLoads(lc, 1, ["Accel"], [dir_name], [9.81])
-    print("[訊息]：單位均佈力載重設定完成！")
-
-    _, num_lc, namelist_lc = sapmodel.loadcases_getnamelist()
-    namelist_lc = list(namelist_lc)
-    eqlc_list = list(lc_unit.keys())
-    sapmodel.file_Save(model_path)
-    for lc in namelist_lc:
-        if lc in eqlc_list:
-            sapmodel.analyze_SetRunCaseFlag(lc, True)
-        else:
-            sapmodel.analyze_SetRunCaseFlag(lc, False)
-
-    runstatus = sapmodel.analyze_RunAnalysis()
-    if runstatus != 0:
-        print("[警告]：模型分析未成功執行。")
-    else:
-        print("[訊息]：模型分析完成！")
-    
-    return sapmodel
-
-def run_analysis_period(model_path, groups_x, groups_y, groups_z):
-    """
-    執行完整的 SAP2000 週期分析與結果匯出流程。
-
-    1. 開啟模型並執行分析。
-    2. 提取位移與質量，計算各群組與方向的週期。
-    3. 將結果印至主控台並匯出至 Excel 檔案。
-
-    參數:
-        model_path (str): SAP2000 模型檔案的完整路徑。
-        groups_x (list): 要在 X 方向分析的群組名稱列表。
-        groups_y (list): 要在 Y 方向分析的群組名稱列表。
-        groups_z (list): 要在 Z 方向分析的群組名稱列表。
-    """
-    # --- 1. 開啟模型並執行分析 ---
-    sapmodel = setup_and_run_sap_analysis(model_path)
-
-    # --- 2. 獲取分析結果並計算週期 ---
-    # 獲取 X 和 Y 方向的位移與質量
-    jointdisp_x = get_disp(sapmodel, 'UNIT-X', groups_x, 7)
-    jointdisp_y = get_disp(sapmodel, 'UNIT-Y', groups_y, 8)
-    jointmass_x = get_mass(sapmodel, groups_x, 3)
-    jointmass_y = get_mass(sapmodel, groups_y, 4)
-
-    # 對於 Z 方向，獲取結果後合併為一個群組
-    raw_jointdisp_z = get_disp(sapmodel, 'UNIT-Z', groups_z, 9)
-    raw_jointmass_z = get_mass(sapmodel, groups_z, 5)
-    merged_z_group_name = 'StructZdir'
-    jointdisp_z = merge_group_data(raw_jointdisp_z, merged_z_group_name)
-    jointmass_z = merge_group_data(raw_jointmass_z, merged_z_group_name)
-
-    period_x = cal_period(jointdisp_x, jointmass_x, groups_x)
-    period_y = cal_period(jointdisp_y, jointmass_y, groups_y)
-    # Z 方向週期計算使用合併後的單一群組
-    period_z = cal_period(jointdisp_z, jointmass_z, [merged_z_group_name])
-    
-    print("[訊息]：週期計算完成！")
-
-    # 關閉 SAP2000
-    sapmodel.file_Save(model_path)
-    sapmodel.closeModel()
-
-    # --- 3. 輸出週期結果 ---
-    print("\n--- Calculated Periods ---")
-    for group_name, data in period_x.items():
-        print(f"Direction: X, Group: {group_name:<10} Period: {data['period']:.4f} s")
-    for group_name, data in period_y.items():
-        print(f"Direction: Y, Group: {group_name:<10} Period: {data['period']:.4f} s")
-    for group_name, data in period_z.items():
-        print(f"Direction: Z, Group: {group_name:<10} Period: {data['period']:.4f} s")
-
-    output_excel_path = os.path.join(os.path.dirname(model_path), '01_period_results.xlsx')
-    export_results_to_excel(period_x, period_y, period_z, output_excel_path)
-    print("[訊息]：計算輸出完成！")
-
 def run_analysis_eqforce(model_path, groups_x, groups_y, groups_z, eqfactor_x, eqfactor_y, eqfactor_z, v_percent):
     # --- 1. 開啟模型並執行分析 ---
     sapmodel = setup_and_run_sap_analysis(model_path)
@@ -864,7 +932,7 @@ def run_analysis_eqforce(model_path, groups_x, groups_y, groups_z, eqfactor_x, e
     print("[訊息]：地震力施加完成！")
 
     # 關閉 SAP2000
-    sapmodel.file_Save(model_path)
+    #sapmodel.file_Save(model_path)
     sapmodel.closeModel()
     print("[訊息]：SAP2000關閉。")
 
@@ -872,68 +940,354 @@ def run_analysis_eqforce(model_path, groups_x, groups_y, groups_z, eqfactor_x, e
     output_excel_path = os.path.join(os.path.dirname(model_path), '02_eqforce_results.xlsx')
     export_eqforce_to_excel(eqforce_x, eqforce_y, eqforce_z, output_excel_path)
 
-class Logger(object):
-    """
-    一個日誌記錄器類別，可以將輸出同時寫入終端和檔案。
-    """
-    def __init__(self, filename="pyeqlog.log", stream=sys.stdout):
-        self.terminal = stream
-        # 使用 utf-8 編碼以支援中文字元
-        self.log = open(filename, "w", encoding='utf-8')
-
-    def write(self, message):
-        """將訊息寫入終端和日誌檔案。"""
-        self.terminal.write(message)
-        self.log.write(message)
-        self.flush() # 確保即時寫入
-
+class EmittingStr(QObject):
+    #將stdout轉到textbrowser
+    textWritten = Signal(str) 
+    def write(self, text):
+        self.textWritten.emit(str(text))
+        loop = QEventLoop()
+        QTimer.singleShot(1, loop.quit)
+        loop.exec()
+        QApplication.processEvents()
+        
     def flush(self):
-        """刷新緩衝區，確保所有內容都已寫入。"""
-        self.terminal.flush()
-        self.log.flush()
+        #stdout默認有write及flush,所以須補flush method避免stdout控制錯誤
+        pass
 
-    def __getattr__(self, attr):
-        """將其他屬性請求代理給原始流對象。"""
-        return getattr(self.terminal, attr)
-
-
-if __name__ == "__main__":
-    # TODO: 此處先指定GROUP，後續須配合UI傳入變數變換
-    groups_to_run_x = ['Pier1','Pier2']
-    groups_to_run_y = ['ALL']
-    groups_to_run_z = ['Pier1','Pier2']
-
-    eqfactor_to_run_x = [0.15, 0.15]
-    eqfactor_to_run_y = [0.15]
-    eqfactor_to_run_z = [0.15, 0.05]
-    eqpercent = 0.9
-
-    # --- 設定日誌記錄 ---
-    # 將日誌檔案儲存在模型檔案所在的目錄下
-    log_file_path = os.path.join(os.path.dirname(MODEL_PATH), 'pyeqlog.log')
-    original_stdout = sys.stdout
-    sys.stdout = Logger(log_file_path, original_stdout)
-
-    try:
-        # --- 執行主流程 ---
-        run_analysis_period(
-            MODEL_PATH, 
+class workerperiod(QObject):
+    finished = Signal()
+    resultReady = Signal(dict, dict, dict, list)
+    
+    def __init__(self):
+        QObject.__init__(self)
+        
+        
+    def pathparameter(self,pathinput):
+        self.pathparameters = pathinput
+        
+    def run(self):
+        """"input解包"""
+        inputsdbpath = self.pathparameters[0]  
+        groups_to_run_x = self.pathparameters[1]
+        groups_to_run_y = self.pathparameters[2]
+        groups_to_run_z = self.pathparameters[3]
+        
+        """計算"""
+        period_x, period_y, period_z = run_analysis_period(
+            inputsdbpath, 
             groups_to_run_x, 
             groups_to_run_y, 
             groups_to_run_z
         )
+        self.resultReady.emit(period_x, period_y, period_z, groups_to_run_z)
 
-        # run_analysis_eqforce(
-        #     MODEL_PATH, 
-        #     groups_to_run_x, 
-        #     groups_to_run_y, 
-        #     groups_to_run_z,
-        #     eqfactor_to_run_x, 
-        #     eqfactor_to_run_y, 
-        #     eqfactor_to_run_z,
-        #     eqpercent
-        # )
-    finally:
-        # --- 還原標準輸出並關閉檔案 ---
-        sys.stdout = original_stdout
-        print(f"[訊息]：日誌已寫入 {log_file_path}")
+        """傳出狀態"""
+        self.finished.emit() 
+
+class workereq(QObject):
+    finished = Signal()
+    
+    def __init__(self):
+        QObject.__init__(self)
+
+    def pathparameter(self,pathinput):
+        self.pathparameters = pathinput
+        
+    def run(self):
+        """"input解包"""
+        inputsdbpath = self.pathparameters[0]  
+        groups_to_run_x = self.pathparameters[1]
+        groups_to_run_y = self.pathparameters[2]
+        groups_to_run_z = self.pathparameters[3]
+        eqfactor_to_run_x = self.pathparameters[4]
+        eqfactor_to_run_y = self.pathparameters[5]
+        eqfactor_to_run_z = self.pathparameters[6]
+        eqpercent = self.pathparameters[7]
+        
+        """計算"""
+        run_analysis_eqforce(
+            inputsdbpath, 
+            groups_to_run_x, 
+            groups_to_run_y, 
+            groups_to_run_z,
+            eqfactor_to_run_x, 
+            eqfactor_to_run_y, 
+            eqfactor_to_run_z,
+            eqpercent
+        )
+
+        """傳出狀態"""
+        self.finished.emit() 
+
+class MainWindow(QObject):
+    def __init__(self, parent=None):
+        super(MainWindow, self).__init__()
+        self._window = None        
+        self.setup_ui()   
+        
+        #將stdout轉到textbrowser
+        sys.stdout = EmittingStr()
+        sys.stdout.textWritten.connect(self.outputWritten) 
+
+    @property
+    def window(self):
+        """The main window object"""
+        self._window.setWindowTitle("PyreEQ")
+        #self._window.setWindowIcon(QIcon("./media/beam.png"))
+
+        return self._window
+    
+    def setup_ui(self):
+        loader = QUiLoader()
+        # 建立 UI 檔案的絕對路徑，確保程式總能找到它
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        ui_file_path = os.path.join(script_dir, 'PyreEQ.ui')
+        file = QFile(ui_file_path)
+        file.open(QFile.ReadOnly)
+        self._window = loader.load(file)
+        file.close()
+        
+        self.set_button() 
+        
+    def outputWritten(self, text):
+        """將原print到stdout內容輸出至textbrowser"""
+        cursor = self._window.status.textCursor()
+        cursor.movePosition(QTextCursor.End)
+        cursor.insertText(text)
+        self._window.status.setTextCursor(cursor)
+        self._window.status.ensureCursorVisible()
+
+    def set_button(self):        
+        """Setup buttons"""  
+        """Choose input SDB file path"""
+        self._window.pushButton.clicked.connect(self.chooseexcelfilepath) 
+
+        """CalculatePeriod"""
+        self._window.pushButton_2.clicked.connect(self.calperiod) 
+
+        """CalculateEarthquakeForce"""
+        self._window.pushButton_3.clicked.connect(self.caleq) 
+
+    @Slot(dict, dict, dict, list)
+    def update_period_results(self, period_x, period_y, period_z, groups_to_run_z):
+        """安全地更新GUI上的週期結果"""
+        print("\n--- Calculated Periods ---")
+        self._window.listWidget_2.clear()
+        self._window.listWidget_3.clear()
+        self._window.listWidget_5.clear()
+
+        for row, (group_name, data) in enumerate(period_x.items()):
+            period_str = f"{data['period']:.4f}"
+            print(f"Direction: X, Group: {group_name:<10} Period: {period_str} s")
+            self._window.listWidget_2.addItem(period_str)            
+            self._window.tableWidget.setItem(row, 0,  QTableWidgetItem(group_name))
+
+        for row, (group_name, data) in enumerate(period_y.items()):
+            period_str = f"{data['period']:.4f}"
+            print(f"Direction: Y, Group: {group_name:<10} Period: {period_str} s")
+            self._window.listWidget_3.addItem(period_str)
+            self._window.tableWidget_2.setItem(row, 0,  QTableWidgetItem(group_name))
+
+        # Z 方向只有一個合併後的群組，所以直接添加
+        for group_name, data in period_z.items():
+            period_str = f"{data['period']:.4f}"
+            print(f"Direction: Z, Group: {group_name:<10} Period: {period_str} s")
+            self._window.listWidget_5.addItem(period_str)
+        for row, group_name in enumerate(groups_to_run_z):
+            self._window.tableWidget_3.setItem(row, 0,  QTableWidgetItem(group_name))
+
+    def calperiod(self):
+        self._window.status.setText("[程式] 執行週期計算")
+        # Step 2: Create a QThread object
+        self.cperiod_thread = QThread()
+        # Step 3: Create a worker object
+        self.cperiod_worker = workerperiod()
+        # Step 4: Move worker to the thread
+        self.cperiod_worker.moveToThread(self.cperiod_thread)
+        # Step 5: Connect signals and slots
+        self.cperiod_thread.started.connect(self.cperiod_worker.run)
+        self.cperiod_worker.finished.connect(self.cperiod_thread.quit)
+        self.cperiod_worker.finished.connect(self.cperiod_worker.deleteLater)
+        self.cperiod_thread.finished.connect(self.cperiod_thread.deleteLater)
+        self.cperiod_worker.resultReady.connect(self.update_period_results)
+        # Step 6: Set input
+        'Input Parameters'
+        input_sdbpath = self._window.lineEdit.text()
+        selected_gx = self._window.listWidget.selectedItems()
+        selected_gy = self._window.listWidget_4.selectedItems()
+        selected_gzsuper = self._window.listWidget_6.selectedItems()
+        selected_gzsub = self._window.listWidget_8.selectedItems()
+
+        gx = []
+        gy = []
+        gz = []
+        for item in selected_gx:
+            gx.append(item.text())
+        for item in selected_gy:
+            gy.append(item.text())
+        for item in selected_gzsuper:
+            gz.append(item.text())
+        for item in selected_gzsub :
+            gz.append(item.text())
+
+        'Input list'
+        inputparameters = [input_sdbpath, gx, gy, gz]
+        
+        '傳入worker'    
+        self.cperiod_worker.pathparameter(inputparameters)
+        # Step 7: Start the thread
+        self.cperiod_thread.start()
+        # Final resets
+        self._window.pushButton_2.setEnabled(False)
+        
+        self.cperiod_thread.finished.connect(
+            lambda: self._window.pushButton_2.setEnabled(True)
+        )
+        self.cperiod_thread.finished.connect(
+            lambda: self._window.status.append("[程式] 執行週期計算完成")
+        )
+
+
+    def caleq(self):
+        self._window.status.setText("[程式] 執行地震力計算")
+        # Step 2: Create a QThread object
+        self.ceq_thread = QThread()
+        # Step 3: Create a worker object
+        self.ceq_worker = workereq()
+        # Step 4: Move worker to the thread
+        self.ceq_worker.moveToThread(self.ceq_thread)
+        # Step 5: Connect signals and slots
+        self.ceq_thread.started.connect(self.ceq_worker.run)
+        self.ceq_worker.finished.connect(self.ceq_thread.quit)
+        self.ceq_worker.finished.connect(self.ceq_worker.deleteLater)
+        self.ceq_thread.finished.connect(self.ceq_thread.deleteLater)
+        # Step 6: Set input
+        'Input Parameters'
+        input_sdbpath = self._window.lineEdit.text()
+        selected_gx = self._window.listWidget.selectedItems()
+        selected_gy = self._window.listWidget_4.selectedItems()
+        selected_gzsuper = self._window.listWidget_6.selectedItems()
+        selected_gzsub = self._window.listWidget_8.selectedItems()
+
+        rows = self._window.tableWidget.rowCount()
+        gx = []
+        gx_f = []
+        for r in range(rows):
+            item = self._window.tableWidget.item(r, 0)
+            if item is None or item.text() == "":
+                # 如果儲存格是空的，就結束讀取
+                break
+            gx.append(item.text())
+            item = self._window.tableWidget.item(r, 1)
+            gx_f.append(float(item.text()))
+
+        rows = self._window.tableWidget_2.rowCount()
+        gy = []
+        gy_f = []
+        for r in range(rows):
+            item = self._window.tableWidget_2.item(r, 0) 
+            if item is None or item.text() == "":
+                # 如果儲存格是空的，就結束讀取
+                break
+            gy.append(item.text())
+            item = self._window.tableWidget_2.item(r, 1)
+            gy_f.append(float(item.text()))
+
+        rows = self._window.tableWidget_3.rowCount()
+        gz = []
+        gz_f = []
+        for r in range(rows):
+            item = self._window.tableWidget_3.item(r, 0)
+            if item is None or item.text() == "":
+                # 如果儲存格是空的，就結束讀取
+                break
+            gz.append(item.text())
+            item = self._window.tableWidget_3.item(r, 1)
+            gz_f.append(float(item.text()))
+
+        exelowerbound = self._window.checkBox.isChecked()
+        if exelowerbound is True:
+            eq_lb = (self._window.spinBox.value())/100
+        else:
+            eq_lb = 0
+
+        'Input list'
+        inputparameters = [input_sdbpath, gx, gy, gz, gx_f, gy_f, gz_f, eq_lb]
+        
+        '傳入worker'    
+        self.ceq_worker.pathparameter(inputparameters)
+        # Step 7: Start the thread
+        self.ceq_thread.start()
+        # Final resets
+        self._window.pushButton_3.setEnabled(False)
+        
+        self.ceq_thread.finished.connect(
+            lambda: self._window.pushButton_3.setEnabled(True)
+        )
+        self.ceq_thread.finished.connect(
+            lambda: self._window.status.append("[程式] 地震力施加完成")
+        )
+
+    '''主程序執行的槽函數'''         
+    @Slot()    
+    def chooseexcelfilepath(self):
+        filename, _ = QFileDialog.getOpenFileName(None, "開啟 SAP2000 模型檔案", "", "SAP2000 Models (*.sdb)")
+        self._window.lineEdit.setText(filename)
+        # 檢查使用者是否選擇了有效的檔案
+        if not filename:
+            print("[警告]：未選擇任何檔案。")
+            return
+
+        def catch_group_list(model_path):
+            """
+            開啟 SAP2000 模型，設定並執行分析。
+
+            1. 開啟並準備 SAP2000 模型。
+            2. 設定並執行單位力載重分析。
+
+            參數:
+                model_path (str): SAP2000 模型檔案的完整路徑。
+
+            回傳:
+                Sap2000: 已執行分析的 Sap2000 物件。
+            """
+            # --- 1. 模型物件創建及控制 ---
+            # 僅啟動 SAP2000，不初始化模型
+            sapmodel = Sap2000()
+            sapmodel.launch_sap()
+
+            if not os.path.exists(model_path):
+                print(f"[錯誤]：找不到模型檔案 -> {model_path}")
+                return None
+
+            print(f"[訊息]：正在開啟模型檔案：{model_path}...")
+            sapmodel.file_OpenFile(model_path)
+            print("[訊息]：模型已成功開啟！")
+            sapmodel.setUnits(12)
+            groupnamelist = sapmodel.groupdef_getnamelist()
+            # 關閉 SAP2000
+            sapmodel.closeModel()
+            print("[訊息]：SAP2000關閉。")
+
+            return groupnamelist[2]
+        
+        list_groupname = catch_group_list(filename)
+        if list_groupname is not None:
+            self._window.listWidget.clear()
+            for item in list_groupname:
+                self._window.listWidget.addItem(item)
+                self._window.listWidget_4.addItem(item)
+                self._window.listWidget_6.addItem(item)
+                self._window.listWidget_8.addItem(item)
+
+if '__main__' == __name__:
+    
+    app = QApplication.instance()
+    if app is None: 
+        app = QApplication()
+    
+    mainwindow = MainWindow()
+    mainwindow.window.show()
+
+    ret = app.exec()
+    sys.exit(ret)

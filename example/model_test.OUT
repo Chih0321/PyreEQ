@@ -1,0 +1,18 @@
+ SAP2000 v14.2.0 Advanced (Analysis Build 8845/32)                              
+ File: D:/Users/63427/Desktop/Code/EQ2SAP/example/model_test.OUT                
+                                                                     
+                                                                       
+
+ D I S P L A C E M E N T   D E G R E E S   O F   F R E E D O M
+
+         (A) = Active DOF, equilibrium equation
+         (-) = Restrained DOF, reaction computed
+         (+) = Constrained DOF
+         (>) = External substructure DOF
+         ( ) = Null DOF
+
+  JOINTS              UX  UY  UZ  RX  RY  RZ
+    2003               -   -   -   -   -   -
+    2002 TO    J017    A   A   A   A   A   A
+    1003               -   -   -   -   -   -
+    1002 TO     ~56    A   A   A   A   A   A

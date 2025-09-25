@@ -1,0 +1,44 @@
+
+
+ SAP2000 v14.2.0 Advanced (Analysis Build 8845/32)
+ File: D:/Users/63427/Desktop/Code/EQ2SAP/example/model_test.LOG
+
+
+
+
+ B E G I N   A N A L Y S I S                                2025/09/25  13:10:18
+
+
+ RUNNING ANALYSIS WITHIN THE GUI PROCESS
+ USING THE ADVANCED SOLVER (PROVIDES LIMITED INSTABILITY INFORMATION)
+
+
+ E L E M E N T   F O R M A T I O N                                      13:10:18
+
+
+
+ L I N E A R   E Q U A T I O N   S O L U T I O N                        13:10:19
+
+ FORMING STIFFNESS AT ZERO (UNSTRESSED) INITIAL CONDITIONS
+
+ TOTAL NUMBER OF EQUILIBRIUM EQUATIONS     =        1812
+ NUMBER OF NON-ZERO STIFFNESS TERMS        =       23730
+
+ NUMBER OF EIGENVALUES BELOW SHIFT         =           0
+
+
+ L I N E A R   S T A T I C   C A S E S                                  13:10:19
+
+ USING STIFFNESS AT ZERO (UNSTRESSED) INITIAL CONDITIONS
+
+ TOTAL NUMBER OF CASES TO SOLVE            =           3
+ NUMBER OF CASES TO SOLVE PER BLOCK        =           3
+
+ LINEAR STATIC CASES TO BE SOLVED:
+
+ CASE: UNIT-X
+ CASE: UNIT-Y
+ CASE: UNIT-Z
+
+
+ A N A L Y S I S   C O M P L E T E                          2025/09/25  13:10:19

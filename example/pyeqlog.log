@@ -4,10 +4,12 @@
 [訊息]：模型已成功開啟！
 [訊息]：單位均佈力載重設定完成！
 [訊息]：模型分析完成！
-[警告]：第一振態分佈力總和未達總基底剪力90.0%！
-[警告]：第一振態分佈力總和未達總基底剪力90.0%！
-[警告]：第一振態分佈力總和未達總基底剪力90.0%！
-[訊息]：分布力計算完成！
-[訊息]：地震力施加完成！
-[訊息]：SAP2000關閉。
-[訊息]：地震力計算結果已成功匯出至：D:\Users\63427\Desktop\Code\EQ2SAP\example\02_eqforce_results.xlsx
+[訊息]：週期計算完成！
+
+--- Calculated Periods ---
+Direction: X, Group: Pier1      Period: 1.0422 s
+Direction: X, Group: Pier2      Period: 0.6348 s
+Direction: Y, Group: ALL        Period: 2.1184 s
+Direction: Z, Group: StructZdir Period: 0.0464 s
+[訊息]：計算結果已成功匯出至：D:\Users\63427\Desktop\Code\EQ2SAP\example\01_period_results.xlsx
+[訊息]：計算輸出完成！
