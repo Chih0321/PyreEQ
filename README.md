@@ -1,4 +1,5 @@
-# PyreEQ <img src="https://github.com/Chih0321/PyreEQ/blob/main/media/icon.png" width="20%">  
+# PyreEQ 
+<img src="https://github.com/Chih0321/PyreEQ/blob/main/media/icon.png" width="20%">  
 PyreEQ提供計算SAP2000(v14)所選群組週期計算，並依`鐵路橋梁耐震設計規範[110年]`進行地震力分配，並assign進SAP2000模型
 
 ## 安裝
