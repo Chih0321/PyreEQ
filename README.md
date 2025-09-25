@@ -1,5 +1,4 @@
-# PyreEQ
-<img src="https://github.com/Chih0321/PyreEQ/blob/main/media/icon.png" width="20%">
+# PyreEQ <img src="https://github.com/Chih0321/PyreEQ/blob/main/media/icon.png" width="20%">  
 PyreEQ提供計算SAP2000(v14)所選群組週期計算，並依`鐵路橋梁耐震設計規範[110年]`進行地震力分配，並assign進SAP2000模型
 
 ## 安裝
@@ -49,5 +48,7 @@ PyreEQ提供計算SAP2000(v14)所選群組週期計算，並依`鐵路橋梁耐�
 2. [SAP2000 Python API語法](https://github.com/Junjun1guo/pythonInteractSAP2000/blob/main/pythonInterSAP2000.py#L8648)
 
 ## ChangeLog
+[v1.0.1](https://github.com/Chih0321/PyreEQ/releases/tag/v1.0.1)
+- 修正因object重名無法正確施加地震力問題
 [v1.0.0](https://github.com/Chih0321/PyreEQ/releases/tag/v1.0.0)
 - Initial Release
