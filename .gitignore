@@ -1,0 +1,14 @@
+# 專案編譯和環境檔案
+venv/
+__pycache__/
+.vscode/
+
+# PyInstaller / Nuitka 產生的資料夾
+build/
+dist/
+
+# 忽略所有 .log 檔案
+*.log
+
+# 忽略所有以 ~ 結尾的臨時檔案
+*~

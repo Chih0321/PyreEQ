@@ -1033,7 +1033,7 @@ class MainWindow(QObject):
     def window(self):
         """The main window object"""
         self._window.setWindowTitle("PyreEQ")
-        #self._window.setWindowIcon(QIcon("./media/beam.png"))
+        self._window.setWindowIcon(QIcon("./media/icon.png"))
 
         return self._window
     

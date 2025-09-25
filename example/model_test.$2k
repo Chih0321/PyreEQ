@@ -1,4 +1,4 @@
-File D:/Users/63427/Desktop/Code/EQ2SAP/example/model_test.$2k was saved on 9/25/25 at 13:10:21
+File D:/Users/63427/Desktop/Code/EQ2SAP/example/model_test.$2k was saved on 9/25/25 at 14:45:47
  
 TABLE:  "ACTIVE DEGREES OF FREEDOM"
    UX=Yes   UY=Yes   UZ=Yes   RX=Yes   RY=Yes   RZ=Yes
@@ -6165,133 +6165,121 @@ TABLE:  "JOINT COORDINATES"
  
 TABLE:  "JOINT LOADS - FORCE"
    Joint=J112   LoadPat=EQL   CoordSys=GLOBAL   F1=-13.7060730573583   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J112   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-0.681103981752357   F3=0   M1=0   M2=0   M3=0
+   Joint=J112   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-0.605425761557651   F3=0   M1=0   M2=0   M3=0
+   Joint=J112   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=15.2934140392574   M1=0   M2=0   M3=0
    Joint=J017   LoadPat=EQL   CoordSys=GLOBAL   F1=-13.7006581152723   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J017   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-0.681052728516138   F3=0   M1=0   M2=0   M3=0
+   Joint=J017   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-0.605380203125456   F3=0   M1=0   M2=0   M3=0
+   Joint=J017   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=15.2934139686098   M1=0   M2=0   M3=0
    Joint=J001   LoadPat=EQL   CoordSys=GLOBAL   F1=-16.1895867061119   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J001   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-0.51678280976241   F3=0   M1=0   M2=0   M3=0
+   Joint=J001   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-0.459362497566587   F3=0   M1=0   M2=0   M3=0
+   Joint=J001   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=15.2934140314411   M1=0   M2=0   M3=0
    Joint=J096   LoadPat=EQL   CoordSys=GLOBAL   F1=-16.1950029836618   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J096   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-0.516834064547675   F3=0   M1=0   M2=0   M3=0
+   Joint=J096   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-0.459408057375711   F3=0   M1=0   M2=0   M3=0
+   Joint=J096   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=15.2934140076382   M1=0   M2=0   M3=0
    Joint=J016   LoadPat=EQL   CoordSys=GLOBAL   F1=-8.86913679560865   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J016   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-2.66070101170947   F3=0   M1=0   M2=0   M3=0
+   Joint=J016   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-2.36506756596397   F3=0   M1=0   M2=0   M3=0
+   Joint=J016   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=9.80399074731153   M1=0   M2=0   M3=0
    Joint=J111   LoadPat=EQL   CoordSys=GLOBAL   F1=-8.87274851108236   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J111   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-2.66079070677088   F3=0   M1=0   M2=0   M3=0
+   Joint=J111   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-2.36514729490745   F3=0   M1=0   M2=0   M3=0
+   Joint=J111   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=9.80399091622684   M1=0   M2=0   M3=0
    Joint=J015   LoadPat=EQL   CoordSys=GLOBAL   F1=-12.5671713527862   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J015   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-7.97969823909953   F3=0   M1=0   M2=0   M3=0
+   Joint=J015   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-7.09306510142181   F3=0   M1=0   M2=0   M3=0
+   Joint=J015   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=13.662862344544   M1=0   M2=0   M3=0
    Joint=J110   LoadPat=EQL   CoordSys=GLOBAL   F1=-12.5719636132579   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J110   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-7.97983912507938   F3=0   M1=0   M2=0   M3=0
+   Joint=J110   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-7.0931903334039   F3=0   M1=0   M2=0   M3=0
+   Joint=J110   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=13.6628623190077   M1=0   M2=0   M3=0
    Joint=J014   LoadPat=EQL   CoordSys=GLOBAL   F1=-10.3930402198255   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J014   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-9.5966867567874   F3=0   M1=0   M2=0   M3=0
+   Joint=J014   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-8.53038822825547   F3=0   M1=0   M2=0   M3=0
+   Joint=J014   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=11.0908891102508   M1=0   M2=0   M3=0
    Joint=J109   LoadPat=EQL   CoordSys=GLOBAL   F1=-10.3973431180896   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J109   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-9.59680543229434   F3=0   M1=0   M2=0   M3=0
+   Joint=J109   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-8.53049371759496   F3=0   M1=0   M2=0   M3=0
+   Joint=J109   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=11.0908890478948   M1=0   M2=0   M3=0
    Joint=J013   LoadPat=EQL   CoordSys=GLOBAL   F1=-13.0434228358285   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J013   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-14.8191649237613   F3=0   M1=0   M2=0   M3=0
+   Joint=J013   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-13.1725910433434   F3=0   M1=0   M2=0   M3=0
+   Joint=J013   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=13.6628623682901   M1=0   M2=0   M3=0
    Joint=J108   LoadPat=EQL   CoordSys=GLOBAL   F1=-13.0485911413704   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J108   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-14.8193051622278   F3=0   M1=0   M2=0   M3=0
+   Joint=J108   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-13.1727156997581   F3=0   M1=0   M2=0   M3=0
+   Joint=J108   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=13.6628623998455   M1=0   M2=0   M3=0
    Joint=J012   LoadPat=EQL   CoordSys=GLOBAL   F1=-10.7646817292639   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J012   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-14.1954055962865   F3=0   M1=0   M2=0   M3=0
+   Joint=J012   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-12.6181383078102   F3=0   M1=0   M2=0   M3=0
+   Joint=J012   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=11.0908890815024   M1=0   M2=0   M3=0
    Joint=J107   LoadPat=EQL   CoordSys=GLOBAL   F1=-10.7692640578809   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J107   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-14.1955243417907   F3=0   M1=0   M2=0   M3=0
+   Joint=J107   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-12.6182438593695   F3=0   M1=0   M2=0   M3=0
+   Joint=J107   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=11.0908891126477   M1=0   M2=0   M3=0
    Joint=J011   LoadPat=EQL   CoordSys=GLOBAL   F1=-13.4722234173497   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J011   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-19.100978120726   F3=0   M1=0   M2=0   M3=0
+   Joint=J011   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-16.9786472184231   F3=0   M1=0   M2=0   M3=0
+   Joint=J011   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=13.6628623488301   M1=0   M2=0   M3=0
    Joint=J106   LoadPat=EQL   CoordSys=GLOBAL   F1=-13.4776861167418   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J106   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-19.1011184171879   F3=0   M1=0   M2=0   M3=0
+   Joint=J106   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-16.9787719263893   F3=0   M1=0   M2=0   M3=0
+   Joint=J106   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=13.6628623881103   M1=0   M2=0   M3=0
    Joint=J010   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.0849556841978   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J010   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-16.5687740419839   F3=0   M1=0   M2=0   M3=0
+   Joint=J010   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-14.7277991484301   F3=0   M1=0   M2=0   M3=0
+   Joint=J010   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=11.090889183727   M1=0   M2=0   M3=0
    Joint=J105   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.0897004191035   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J105   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-16.5688925894976   F3=0   M1=0   M2=0   M3=0
+   Joint=J105   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-14.7279045239979   F3=0   M1=0   M2=0   M3=0
+   Joint=J105   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=11.0908890791046   M1=0   M2=0   M3=0
    Joint=J009   LoadPat=EQL   CoordSys=GLOBAL   F1=-13.8300900874621   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J009   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-20.5531860011851   F3=0   M1=0   M2=0   M3=0
+   Joint=J009   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-18.2694986677201   F3=0   M1=0   M2=0   M3=0
+   Joint=J009   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=13.6628625345678   M1=0   M2=0   M3=0
    Joint=J104   LoadPat=EQL   CoordSys=GLOBAL   F1=-13.8356567907083   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J104   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-20.553326019392   F3=0   M1=0   M2=0   M3=0
+   Joint=J104   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-18.2696231283484   F3=0   M1=0   M2=0   M3=0
+   Joint=J104   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=13.6628623523893   M1=0   M2=0   M3=0
    Joint=J008   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.3439423337001   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J008   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-16.5539229199729   F3=0   M1=0   M2=0   M3=0
+   Joint=J008   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-14.7145981510871   F3=0   M1=0   M2=0   M3=0
+   Joint=J008   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=11.0908890663164   M1=0   M2=0   M3=0
    Joint=J103   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.3486872993197   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J103   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-16.5540416452552   F3=0   M1=0   M2=0   M3=0
+   Joint=J103   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-14.7147036846713   F3=0   M1=0   M2=0   M3=0
+   Joint=J103   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=11.090889080712   M1=0   M2=0   M3=0
    Joint=J007   LoadPat=EQL   CoordSys=GLOBAL   F1=-14.1095248222361   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J007   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-19.064285356031   F3=0   M1=0   M2=0   M3=0
+   Joint=J007   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-16.9460314275831   F3=0   M1=0   M2=0   M3=0
+   Joint=J007   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=13.6628623834275   M1=0   M2=0   M3=0
    Joint=J102   LoadPat=EQL   CoordSys=GLOBAL   F1=-14.1149877383322   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J102   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-19.0644256373693   F3=0   M1=0   M2=0   M3=0
+   Joint=J102   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-16.946156122106   F3=0   M1=0   M2=0   M3=0
+   Joint=J102   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=13.6628623653766   M1=0   M2=0   M3=0
    Joint=J005   LoadPat=EQL   CoordSys=GLOBAL   F1=-14.3094037138645   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J005   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-14.7452343588655   F3=0   M1=0   M2=0   M3=0
+   Joint=J005   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-13.1068749856582   F3=0   M1=0   M2=0   M3=0
+   Joint=J005   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=13.6628623408814   M1=0   M2=0   M3=0
    Joint=J100   LoadPat=EQL   CoordSys=GLOBAL   F1=-14.3145725782266   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J100   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-14.7453746180596   F3=0   M1=0   M2=0   M3=0
+   Joint=J100   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-13.1069996604974   F3=0   M1=0   M2=0   M3=0
+   Joint=J100   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=13.6628623565344   M1=0   M2=0   M3=0
    Joint=J003   LoadPat=EQL   CoordSys=GLOBAL   F1=-14.4284040018967   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J003   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-7.86745746306616   F3=0   M1=0   M2=0   M3=0
+   Joint=J003   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-6.99329552272548   F3=0   M1=0   M2=0   M3=0
+   Joint=J003   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=13.6628623876671   M1=0   M2=0   M3=0
    Joint=J098   LoadPat=EQL   CoordSys=GLOBAL   F1=-14.4331971654767   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J098   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-7.86759827505397   F3=0   M1=0   M2=0   M3=0
+   Joint=J098   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-6.99342068893686   F3=0   M1=0   M2=0   M3=0
+   Joint=J098   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=13.6628623605645   M1=0   M2=0   M3=0
    Joint=J006   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.5385357545207   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J006   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-14.1506234779591   F3=0   M1=0   M2=0   M3=0
+   Joint=J006   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-12.5783319804081   F3=0   M1=0   M2=0   M3=0
+   Joint=J006   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=11.0908890057252   M1=0   M2=0   M3=0
    Joint=J101   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.5431184828779   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J101   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-14.1507422974101   F3=0   M1=0   M2=0   M3=0
+   Joint=J101   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-12.5784375976979   F3=0   M1=0   M2=0   M3=0
+   Joint=J101   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=11.0908890904529   M1=0   M2=0   M3=0
    Joint=J004   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.6679050735786   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J004   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-9.52128242000066   F3=0   M1=0   M2=0   M3=0
+   Joint=J004   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-8.4633621511117   F3=0   M1=0   M2=0   M3=0
+   Joint=J004   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=11.0908891163318   M1=0   M2=0   M3=0
    Joint=J099   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.6722085904591   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J099   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-9.52140112027373   F3=0   M1=0   M2=0   M3=0
+   Joint=J099   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-8.46346766246554   F3=0   M1=0   M2=0   M3=0
+   Joint=J099   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=11.0908890783786   M1=0   M2=0   M3=0
    Joint=J002   LoadPat=EQL   CoordSys=GLOBAL   F1=-10.3704409452969   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J002   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-2.56593806926819   F3=0   M1=0   M2=0   M3=0
+   Joint=J002   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-2.28083383934951   F3=0   M1=0   M2=0   M3=0
+   Joint=J002   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=9.80399079873506   M1=0   M2=0   M3=0
    Joint=J097   LoadPat=EQL   CoordSys=GLOBAL   F1=-10.3740533019922   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J097   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-2.56602771368547   F3=0   M1=0   M2=0   M3=0
-   Joint=J122   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.1586768594766   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J122   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=11.2137592483676   M1=0   M2=0   M3=0
-   Joint=J118   LoadPat=EQL   CoordSys=GLOBAL   F1=-16.0957681462587   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J118   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=16.1422221245342   M1=0   M2=0   M3=0
-   Joint=J128   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.0060724694699   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J128   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=11.0072531735184   M1=0   M2=0   M3=0
-   Joint=J132   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.2377828314398   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J132   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=11.2137592484571   M1=0   M2=0   M3=0
-   Joint=J138   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.006969619062   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J138   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=10.9970562304419   M1=0   M2=0   M3=0
-   Joint=J142   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.190909197837   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J142   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=11.190438477253   M1=0   M2=0   M3=0
-   Joint=J150   LoadPat=EQL   CoordSys=GLOBAL   F1=-10.9613369810886   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J150   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=10.9737162845807   M1=0   M2=0   M3=0
-   Joint=J149   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.13822643856   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J149   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=11.1603823427327   M1=0   M2=0   M3=0
-   Joint=J148   LoadPat=EQL   CoordSys=GLOBAL   F1=-10.9399785330975   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J148   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=10.9737162845842   M1=0   M2=0   M3=0
-   Joint=J141   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.1624330039176   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J141   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=11.1904384772641   M1=0   M2=0   M3=0
-   Joint=J137   LoadPat=EQL   CoordSys=GLOBAL   F1=-10.9763895477251   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J137   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=10.9970562307925   M1=0   M2=0   M3=0
-   Joint=J131   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.214646349955   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J131   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=11.2137592483683   M1=0   M2=0   M3=0
-   Joint=J127   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.0308012905193   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J127   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=11.0072531735184   M1=0   M2=0   M3=0
-   Joint=J121   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.2703919939175   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J121   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=11.2137592483461   M1=0   M2=0   M3=0
-   Joint=J117   LoadPat=EQL   CoordSys=GLOBAL   F1=-16.2665127050151   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J117   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=16.1422221247899   M1=0   M2=0   M3=0
-   Joint=J120   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.1556430754935   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J120   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=11.2137592473765   M1=0   M2=0   M3=0
-   Joint=J114   LoadPat=EQL   CoordSys=GLOBAL   F1=-16.0910241754459   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J114   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=16.1422221200773   M1=0   M2=0   M3=0
-   Joint=J124   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.0031120840994   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J124   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=11.0072531735231   M1=0   M2=0   M3=0
-   Joint=J130   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.2350323014516   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J130   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=11.2137592497076   M1=0   M2=0   M3=0
-   Joint=J134   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.004342644126   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J134   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=10.9970562316691   M1=0   M2=0   M3=0
-   Joint=J140   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.1884620488038   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J140   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=11.190438476627   M1=0   M2=0   M3=0
-   Joint=J145   LoadPat=EQL   CoordSys=GLOBAL   F1=-10.9589378629641   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J145   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=10.9737162847898   M1=0   M2=0   M3=0
-   Joint=J144   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.135899369501   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J144   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=11.1603823420154   M1=0   M2=0   M3=0
-   Joint=J143   LoadPat=EQL   CoordSys=GLOBAL   F1=-10.9375793491207   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J143   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=10.9737162845834   M1=0   M2=0   M3=0
-   Joint=J139   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.1599857210494   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J139   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=11.1904384781642   M1=0   M2=0   M3=0
-   Joint=J133   LoadPat=EQL   CoordSys=GLOBAL   F1=-10.9737623763551   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J133   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=10.9970562312398   M1=0   M2=0   M3=0
-   Joint=J129   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.2118955546112   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J129   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=11.21375924667   M1=0   M2=0   M3=0
-   Joint=J123   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.0278405961105   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J123   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=11.0072531735184   M1=0   M2=0   M3=0
-   Joint=J119   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.2673578525724   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J119   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=11.2137592490969   M1=0   M2=0   M3=0
-   Joint=J113   LoadPat=EQL   CoordSys=GLOBAL   F1=-16.2617681686945   F2=0   F3=0   M1=0   M2=0   M3=0
-   Joint=J113   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=16.1422221289865   M1=0   M2=0   M3=0
+   Joint=J097   LoadPat=EQT   CoordSys=GLOBAL   F1=0   F2=-2.28091352327597   F3=0   M1=0   M2=0   M3=0
+   Joint=J097   LoadPat=EQV   CoordSys=GLOBAL   F1=0   F2=0   F3=9.80399079062119   M1=0   M2=0   M3=0
+   Joint=J122   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.1622232125088   F2=0   F3=0   M1=0   M2=0   M3=0
+   Joint=J132   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.2413543252398   F2=0   F3=0   M1=0   M2=0   M3=0
+   Joint=J142   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.194465794669   F2=0   F3=0   M1=0   M2=0   M3=0
+   Joint=J149   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.1417662922184   F2=0   F3=0   M1=0   M2=0   M3=0
+   Joint=J141   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.1659805506948   F2=0   F3=0   M1=0   M2=0   M3=0
+   Joint=J131   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.2182104907209   F2=0   F3=0   M1=0   M2=0   M3=0
+   Joint=J121   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.2739738512762   F2=0   F3=0   M1=0   M2=0   M3=0
+   Joint=J120   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.1591884643551   F2=0   F3=0   M1=0   M2=0   M3=0
+   Joint=J130   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.2386029211022   F2=0   F3=0   M1=0   M2=0   M3=0
+   Joint=J140   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.1920178679043   F2=0   F3=0   M1=0   M2=0   M3=0
+   Joint=J144   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.1394384835907   F2=0   F3=0   M1=0   M2=0   M3=0
+   Joint=J139   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.1635324900525   F2=0   F3=0   M1=0   M2=0   M3=0
+   Joint=J129   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.2154588211434   F2=0   F3=0   M1=0   M2=0   M3=0
+   Joint=J119   LoadPat=EQL   CoordSys=GLOBAL   F1=-11.2709387456468   F2=0   F3=0   M1=0   M2=0   M3=0
    Joint=J116   LoadPat=EQL   CoordSys=GLOBAL   F1=-5.29271383813497   F2=0   F3=0   M1=0   M2=0   M3=0
    Joint=J126   LoadPat=EQL   CoordSys=GLOBAL   F1=-5.29309504156354   F2=0   F3=0   M1=0   M2=0   M3=0
    Joint=J136   LoadPat=EQL   CoordSys=GLOBAL   F1=-5.2752979467036   F2=0   F3=0   M1=0   M2=0   M3=0
@@ -6367,9 +6355,9 @@ TABLE:  "LOAD CASE DEFINITIONS"
    Case=UNIT-X   Type=LinStatic   InitialCond=Zero   DesTypeOpt="Prog Det"   DesignType=QUAKE   AutoType=None   RunCase=Yes
    Case=UNIT-Y   Type=LinStatic   InitialCond=Zero   DesTypeOpt="Prog Det"   DesignType=QUAKE   AutoType=None   RunCase=Yes
    Case=UNIT-Z   Type=LinStatic   InitialCond=Zero   DesTypeOpt="Prog Det"   DesignType=QUAKE   AutoType=None   RunCase=Yes
-   Case=EQL   Type=LinStatic   InitialCond=Zero   DesTypeOpt="Prog Det"   DesignType=QUAKE   AutoType=None   RunCase=Yes
-   Case=EQT   Type=LinStatic   InitialCond=Zero   DesTypeOpt="Prog Det"   DesignType=QUAKE   AutoType=None   RunCase=Yes
-   Case=EQV   Type=LinStatic   InitialCond=Zero   DesTypeOpt="Prog Det"   DesignType=QUAKE   AutoType=None   RunCase=Yes
+   Case=EQL   Type=LinStatic   InitialCond=Zero   DesTypeOpt="Prog Det"   DesignType=QUAKE   AutoType=None   RunCase=No
+   Case=EQT   Type=LinStatic   InitialCond=Zero   DesTypeOpt="Prog Det"   DesignType=QUAKE   AutoType=None   RunCase=No
+   Case=EQV   Type=LinStatic   InitialCond=Zero   DesTypeOpt="Prog Det"   DesignType=QUAKE   AutoType=None   RunCase=No
  
 TABLE:  "LOAD PATTERN DEFINITIONS"
    LoadPat=DEAD   DesignType=DEAD   SelfWtMult=1
