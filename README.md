@@ -7,4 +7,6 @@ PyreEQ提供計算SAP2000(v14)所選群組週期計算，並依`鐵路橋梁耐�
 
 ## 快速開始
 1. ### 模型檔案選擇
-2. <[./media/s1.png.png](https://github.com/Chih0321/PyreEQ/blob/main/media/s1.png)>
+    ![STEP1](https://github.com/Chih0321/PyreEQ/blob/main/media/s1.png)
+    由選擇按鈕選擇要執行的SAP2000模型(.sdb)
+2. ### 計算
