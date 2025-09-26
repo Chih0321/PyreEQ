@@ -42,7 +42,7 @@ PyreEQ提供計算SAP2000(v14)所選群組週期計算，並依`鐵路橋梁耐�
 4. `GROUP`群交界桿件建議不框(SAP是認桿件去選NODE)，只要確定要計算的NODE都有考慮到即可，若都框到，程式以第1筆數值進行計算
 
 ## 使用手冊
-**施工中**
+[Tourial](https://chih0321.github.io/PyreEQ/) **未完成**
 
 ## 參考資料
 1. 鐵路橋梁耐震設計規範
@@ -51,5 +51,6 @@ PyreEQ提供計算SAP2000(v14)所選群組週期計算，並依`鐵路橋梁耐�
 ## ChangeLog
 [v1.0.1](https://github.com/Chih0321/PyreEQ/releases/tag/v1.0.1)
 - 修正因object重名無法正確施加地震力問題
+  
 [v1.0.0](https://github.com/Chih0321/PyreEQ/releases/tag/v1.0.0)
 - Initial Release
